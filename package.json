@@ -1,0 +1,20 @@
+{
+  "name": "travelbudget-backend",
+  "version": "1.0.0",
+  "description": "Travel budget backend API using Node.js + Express + Supabase Postgres",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node --check src/app.js && node --check src/config/env.js && node --check src/db/pool.js && node --check src/services/tripService.js && node --check src/services/expenseService.js && node --check src/routes/trips.js && node --check src/routes/expenses.js && node --check src/middlewares/errorHandler.js && node --check src/middlewares/notFound.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
