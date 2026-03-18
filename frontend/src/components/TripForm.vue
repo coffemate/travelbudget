@@ -2,7 +2,6 @@
   <form class="card" @submit.prevent="onSubmit">
     <h3>创建旅行</h3>
     <div class="row">
-      <input v-model="form.owner_id" placeholder="owner_id (UUID)" required />
       <input v-model="form.name" placeholder="trip name" required />
     </div>
     <div class="row">
@@ -21,7 +20,6 @@ import { reactive } from 'vue';
 const emit = defineEmits(['submit']);
 
 const form = reactive({
-  owner_id: '',
   name: '',
   start_date: '',
   end_date: '',

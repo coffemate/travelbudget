@@ -1,5 +1,5 @@
 const pool = require('../db/pool');
-const { isUuid, badRequest } = require('./tripService');
+const { isUuid, badRequest, forbidden } = require('./tripService');
 
 function parsePositiveNumber(value, fieldName) {
   const n = Number(value);
@@ -16,7 +16,7 @@ function normalizeCurrency(currency, fieldName = 'currency') {
   return String(currency).toUpperCase();
 }
 
-async function addExpense(tripId, payload) {
+async function addExpense(tripId, payload, userId) {
   const { created_by, paid_by, amount, currency, fx_rate_to_base, category, spent_at, note, idempotency_key } = payload;
 
   if (!isUuid(tripId)) throw badRequest('tripId must be a valid UUID');
@@ -41,6 +41,9 @@ async function addExpense(tripId, payload) {
       throw err;
     }
     const trip = tripRes.rows[0];
+    if (userId && trip.owner_id !== userId) {
+      throw forbidden('You do not have access to this trip');
+    }
 
     const amountInBase = Number((amountValue * fxRateValue).toFixed(2));
     const nextRemaining = Number(trip.remaining_budget) - amountInBase;
@@ -95,8 +98,18 @@ async function addExpense(tripId, payload) {
   }
 }
 
-async function listExpenses(tripId) {
+async function listExpenses(tripId, userId) {
   if (!isUuid(tripId)) throw badRequest('tripId must be a valid UUID');
+
+  const tripRes = await pool.query('select owner_id from public.trips where id = $1', [tripId]);
+  if (!tripRes.rows[0]) {
+    const err = new Error('Trip not found');
+    err.status = 404;
+    throw err;
+  }
+  if (userId && tripRes.rows[0].owner_id !== userId) {
+    throw forbidden('You do not have access to this trip');
+  }
 
   const { rows } = await pool.query(
     'select * from public.expenses where trip_id = $1 and is_voided = false order by spent_at desc, created_at desc',
@@ -106,7 +119,7 @@ async function listExpenses(tripId) {
   return rows;
 }
 
-async function updateExpense(expenseId, payload) {
+async function updateExpense(expenseId, payload, userId) {
   if (!isUuid(expenseId)) throw badRequest('expenseId must be a valid UUID');
 
   const { amount, currency, fx_rate_to_base, category, spent_at, note, paid_by } = payload;
@@ -135,6 +148,9 @@ async function updateExpense(expenseId, payload) {
     const current = expenseRes.rows[0];
     const tripRes = await client.query('select * from public.trips where id = $1 for update', [current.trip_id]);
     const trip = tripRes.rows[0];
+    if (userId && trip.owner_id !== userId) {
+      throw forbidden('You do not have access to this expense');
+    }
 
     const newAmountInBase = Number((amountValue * fxRateValue).toFixed(2));
     const diff = newAmountInBase - Number(current.amount_in_base);
@@ -166,7 +182,7 @@ async function updateExpense(expenseId, payload) {
   }
 }
 
-async function deleteExpense(expenseId) {
+async function deleteExpense(expenseId, userId) {
   if (!isUuid(expenseId)) throw badRequest('expenseId must be a valid UUID');
 
   const client = await pool.connect();
@@ -188,6 +204,9 @@ async function deleteExpense(expenseId) {
 
     const tripRes = await client.query('select * from public.trips where id = $1 for update', [expense.trip_id]);
     const trip = tripRes.rows[0];
+    if (userId && trip.owner_id !== userId) {
+      throw forbidden('You do not have access to this expense');
+    }
 
     const nextRemaining = Number(trip.remaining_budget) + Number(expense.amount_in_base);
 

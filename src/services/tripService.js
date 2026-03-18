@@ -10,6 +10,12 @@ function badRequest(message) {
   return err;
 }
 
+function forbidden(message = 'Forbidden') {
+  const err = new Error(message);
+  err.status = 403;
+  return err;
+}
+
 function parseNonNegativeNumber(value, fieldName) {
   const n = Number(value);
   if (!Number.isFinite(n) || n < 0) {
@@ -64,7 +70,7 @@ async function createTrip(payload) {
   return rows[0];
 }
 
-async function getTripById(tripId) {
+async function getTripById(tripId, userId) {
   if (!isUuid(tripId)) {
     throw badRequest('tripId must be a valid UUID');
   }
@@ -76,6 +82,10 @@ async function getTripById(tripId) {
     throw err;
   }
 
+  if (userId && rows[0].owner_id !== userId) {
+    throw forbidden('You do not have access to this trip');
+  }
+
   return rows[0];
 }
 
@@ -84,4 +94,5 @@ module.exports = {
   getTripById,
   isUuid,
   badRequest,
+  forbidden,
 };

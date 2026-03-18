@@ -514,3 +514,39 @@ VITE_API_BASE_URL=/api
 - 图表分析
 - 多人协作
 - 审计日志
+
+
+## 13. Supabase Auth 配置说明
+
+本项目现在已接入 **Supabase Auth（邮箱注册 / 邮箱登录）**。
+
+### 前端需要的环境变量
+根目录下的前端项目 `frontend/.env` 需要：
+
+```env
+VITE_API_BASE_URL=/api
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+```
+
+### 后端需要的环境变量
+根目录 `.env` 需要：
+
+```env
+PORT=3000
+SUPABASE_DB_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_ANON_KEY=<your-supabase-anon-key>
+```
+
+### Supabase 后台需要检查的设置
+1. 打开 Supabase 控制台。
+2. 进入 **Authentication**。
+3. 确认 **Email** 登录方式已启用。
+4. 如果你希望注册后立即登录，请检查你的项目是否关闭了强制邮件确认，或者按 Supabase 的确认邮件流程完成验证。
+
+### 当前鉴权方式
+- 前端使用 `@supabase/supabase-js` 完成注册、登录、登出和会话持久化。
+- 前端请求后端 API 时，会自动把 `access_token` 放到 `Authorization: Bearer <token>` 头中。
+- 后端会使用 Supabase Auth 校验 token，并把用户信息挂到 `req.user`。
+- `trip` 与 `expense` 接口现在都要求登录后访问，并且只能访问当前登录用户自己的数据。
