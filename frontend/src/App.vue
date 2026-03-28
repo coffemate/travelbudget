@@ -1,20 +1,21 @@
 <template>
-  <div>
-    <header class="card" style="border-radius: 0; border-left: 0; border-right: 0;">
-      <div class="container row" style="justify-content: space-between; align-items: center;">
-        <strong>Travel Budget Tool</strong>
-        <nav class="row" style="align-items: center;">
-          <RouterLink v-if="authStore.isAuthenticated" to="/">首页</RouterLink>
-          <RouterLink v-if="authStore.isAuthenticated" to="/budget">预算页</RouterLink>
-          <RouterLink v-if="!authStore.isAuthenticated" to="/login">登录</RouterLink>
-          <RouterLink v-if="!authStore.isAuthenticated" to="/register">注册</RouterLink>
-          <span v-if="authStore.user" style="font-size: 12px; color: #6b7280;">
-            {{ authStore.user.email }}
-          </span>
-          <button v-if="authStore.isAuthenticated" type="button" @click="handleLogout">退出</button>
-        </nav>
-      </div>
-    </header>
+  <div class="app-shell">
+    <div class="topbar-wrap">
+      <header class="card topbar">
+        <div class="container nav-row" style="padding: 0;">
+          <strong class="page-title" style="font-size: 18px; margin: 0;">Travel Budget Tool</strong>
+          <nav class="nav-links">
+            <RouterLink v-if="authStore.isAuthenticated" class="nav-link" to="/expense">支出页</RouterLink>
+            <RouterLink v-if="authStore.isAuthenticated" class="nav-link" to="/trip">行程页</RouterLink>
+            <RouterLink v-if="!authStore.isAuthenticated" class="nav-link" to="/login">登录</RouterLink>
+            <RouterLink v-if="!authStore.isAuthenticated" class="nav-link" to="/register">注册</RouterLink>
+            <span v-if="authStore.user" class="user-chip">{{ authStore.user.email }}</span>
+            <button v-if="authStore.isAuthenticated" type="button" @click="handleLogout">退出</button>
+          </nav>
+        </div>
+      </header>
+    </div>
+
 
     <main class="container" style="margin-top: 12px;">
       <RouterView />

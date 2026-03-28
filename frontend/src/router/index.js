@@ -1,14 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
-const HomeView = () => import('../views/HomeView.vue');
-const BudgetView = () => import('../views/BudgetView.vue');
+const TripPage = () => import('../views/TripPage.vue');
+const ExpensePage = () => import('../views/ExpensePage.vue');
+
 const LoginView = () => import('../views/Login.vue');
 const RegisterView = () => import('../views/Register.vue');
 
 const routes = [
-  { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: true } },
-  { path: '/budget', name: 'budget', component: BudgetView, meta: { requiresAuth: true } },
+  { path: '/', redirect: '/expense' },
+  { path: '/trip', name: 'trip', component: TripPage, meta: { requiresAuth: true } },
+  { path: '/expense', name: 'expense', component: ExpensePage, meta: { requiresAuth: true } },
+
   { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
   { path: '/register', name: 'register', component: RegisterView, meta: { guestOnly: true } },
 ];
@@ -27,7 +30,8 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.guestOnly && authStore.isAuthenticated) {
-    return { name: 'budget' };
+    return { name: 'expense' };
+
   }
 
   return true;
