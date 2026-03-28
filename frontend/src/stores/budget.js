@@ -8,10 +8,15 @@ function startOfToday() {
   return today;
 }
 
+function getStorageKey(userId) {
+  return userId ? `travelbudget_trips_${userId}` : 'travelbudget_trips_guest';
+}
+
 export const useBudgetStore = defineStore('budget', () => {
   const loading = ref(false);
   const error = ref('');
   const currentTrip = ref(null);
+  const trips = ref([]);
   const expenses = ref([]);
 
   const totalBudget = computed(() => Number(currentTrip.value?.total_budget || 0));
@@ -37,13 +42,44 @@ export const useBudgetStore = defineStore('budget', () => {
     return Number((remainingBudget.value / remainingDays.value).toFixed(2));
   });
 
-  async function createTripAction(payload) {
+  function saveTripsToStorage(userId) {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(getStorageKey(userId), JSON.stringify(trips.value));
+  }
+
+  function loadTripsFromStorage(userId) {
+    if (typeof window === 'undefined') return;
+    const raw = window.localStorage.getItem(getStorageKey(userId));
+    if (!raw) {
+      trips.value = [];
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      trips.value = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      trips.value = [];
+    }
+  }
+
+  function upsertTrip(trip, userId) {
+    const idx = trips.value.findIndex((t) => t.id === trip.id);
+    if (idx === -1) {
+      trips.value.unshift(trip);
+    } else {
+      trips.value[idx] = trip;
+    }
+    saveTripsToStorage(userId);
+  }
+
+  async function createTripAction(payload, userId) {
     loading.value = true;
     error.value = '';
     try {
       const trip = await createTrip(payload);
       currentTrip.value = trip;
       expenses.value = [];
+      upsertTrip(trip, userId);
       return trip;
     } catch (err) {
       error.value = err.message;
@@ -53,13 +89,14 @@ export const useBudgetStore = defineStore('budget', () => {
     }
   }
 
-  async function loadTrip(tripId) {
+  async function loadTrip(tripId, userId) {
     loading.value = true;
     error.value = '';
     try {
       const [trip, expenseList] = await Promise.all([getTrip(tripId), listExpenses(tripId)]);
       currentTrip.value = trip;
       expenses.value = expenseList;
+      upsertTrip(trip, userId);
     } catch (err) {
       error.value = err.message;
       throw err;
@@ -68,16 +105,21 @@ export const useBudgetStore = defineStore('budget', () => {
     }
   }
 
+  async function selectTrip(tripId, userId) {
+    await loadTrip(tripId, userId);
+  }
+
   async function refreshExpenses(tripId) {
     expenses.value = await listExpenses(tripId);
   }
 
-  async function addExpenseAction(tripId, payload) {
+  async function addExpenseAction(tripId, payload, userId) {
     loading.value = true;
     error.value = '';
     try {
       const result = await addExpense(tripId, payload);
       currentTrip.value = result.trip;
+      upsertTrip(result.trip, userId);
       await refreshExpenses(tripId);
       return result;
     } catch (err) {
@@ -88,12 +130,13 @@ export const useBudgetStore = defineStore('budget', () => {
     }
   }
 
-  async function updateExpenseAction(expenseId, payload) {
+  async function updateExpenseAction(expenseId, payload, userId) {
     loading.value = true;
     error.value = '';
     try {
       const result = await updateExpense(expenseId, payload);
       currentTrip.value = result.trip;
+      upsertTrip(result.trip, userId);
       await refreshExpenses(result.trip.id);
       return result;
     } catch (err) {
@@ -104,12 +147,13 @@ export const useBudgetStore = defineStore('budget', () => {
     }
   }
 
-  async function deleteExpenseAction(expenseId) {
+  async function deleteExpenseAction(expenseId, userId) {
     loading.value = true;
     error.value = '';
     try {
       const result = await deleteExpense(expenseId);
       currentTrip.value = result.trip;
+      upsertTrip(result.trip, userId);
       await refreshExpenses(result.trip.id);
       return result;
     } catch (err) {
@@ -124,6 +168,7 @@ export const useBudgetStore = defineStore('budget', () => {
     loading,
     error,
     currentTrip,
+    trips,
     expenses,
     totalBudget,
     remainingBudget,
@@ -131,8 +176,10 @@ export const useBudgetStore = defineStore('budget', () => {
     spentPercent,
     remainingDays,
     dailySuggestedBudget,
+    loadTripsFromStorage,
     createTripAction,
     loadTrip,
+    selectTrip,
     addExpenseAction,
     updateExpenseAction,
     deleteExpenseAction,

@@ -1,5 +1,15 @@
 <template>
   <section class="page-stack">
+    <div class="card" v-if="store.currentTrip">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <div class="summary-label">当前行程</div>
+          <button type="button" class="secondary-btn" @click="goTripList">{{ store.currentTrip.name }}</button>
+        </div>
+        <RouterLink to="/expense/add"><button>添加支出</button></RouterLink>
+      </div>
+    </div>
+
     <div v-if="store.currentTrip" class="card">
       <h3 class="section-title">预算概览</h3>
       <p class="hero-metric">{{ store.remainingBudget }}</p>
@@ -14,14 +24,6 @@
           <div class="summary-label">已用百分比</div>
           <div class="summary-value">{{ store.spentPercent }}%</div>
         </div>
-        <div class="summary-item">
-          <div class="summary-label">剩余天数</div>
-          <div class="summary-value">{{ store.remainingDays }}</div>
-        </div>
-        <div class="summary-item">
-          <div class="summary-label">今日建议花费</div>
-          <div class="summary-value summary-value--remain">{{ store.dailySuggestedBudget }}</div>
-        </div>
       </div>
 
       <div class="progress-track">
@@ -31,18 +33,11 @@
 
     <div v-else class="card">
       <h3 class="section-title">暂无行程</h3>
-      <p class="body-text">请先前往行程页面创建行程，然后再回来添加支出。</p>
+      <p class="body-text">请先前往行程页面选择或创建行程。</p>
       <div class="action-row">
-        <RouterLink to="/trip"><button>去创建行程</button></RouterLink>
+        <RouterLink to="/trip"><button>去行程列表</button></RouterLink>
       </div>
     </div>
-
-    <ExpenseForm
-      v-if="store.currentTrip"
-      :submit-success-version="submitSuccessVersion"
-      :success-message="expenseSuccessMessage"
-      @submit="handleAddExpense"
-    />
 
     <div v-if="store.currentTrip" class="card">
       <h3 class="section-title">支出列表</h3>
@@ -89,14 +84,14 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
-import { RouterLink } from 'vue-router';
-import ExpenseForm from '../components/ExpenseForm.vue';
+import { RouterLink, useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 import { useBudgetStore } from '../stores/budget';
 
+const router = useRouter();
+const authStore = useAuthStore();
 const store = useBudgetStore();
 const editingId = ref('');
-const submitSuccessVersion = ref(0);
-const expenseSuccessMessage = ref('');
 const editForm = reactive({
   amount: 0,
   currency: 'CNY',
@@ -108,16 +103,14 @@ const editForm = reactive({
 });
 
 onMounted(async () => {
+  store.loadTripsFromStorage(authStore.user?.id);
   if (store.currentTrip?.id) {
-    await store.loadTrip(store.currentTrip.id);
+    await store.loadTrip(store.currentTrip.id, authStore.user?.id);
   }
 });
 
-async function handleAddExpense(payload) {
-  if (!store.currentTrip) return;
-  await store.addExpenseAction(store.currentTrip.id, payload);
-  submitSuccessVersion.value += 1;
-  expenseSuccessMessage.value = '支出添加成功';
+function goTripList() {
+  router.push('/trip');
 }
 
 function startEdit(item) {
@@ -136,20 +129,24 @@ function cancelEdit() {
 }
 
 async function handleSaveEdit(expenseId) {
-  await store.updateExpenseAction(expenseId, {
-    amount: editForm.amount,
-    currency: editForm.currency.toUpperCase(),
-    fx_rate_to_base: editForm.fx_rate_to_base,
-    category: editForm.category,
-    spent_at: new Date(editForm.spent_at).toISOString(),
-    note: editForm.note,
-    paid_by: editForm.paid_by || null,
-  });
+  await store.updateExpenseAction(
+    expenseId,
+    {
+      amount: editForm.amount,
+      currency: editForm.currency.toUpperCase(),
+      fx_rate_to_base: editForm.fx_rate_to_base,
+      category: editForm.category,
+      spent_at: new Date(editForm.spent_at).toISOString(),
+      note: editForm.note,
+      paid_by: editForm.paid_by || null,
+    },
+    authStore.user?.id,
+  );
   cancelEdit();
 }
 
 async function handleDelete(expenseId) {
-  await store.deleteExpenseAction(expenseId);
+  await store.deleteExpenseAction(expenseId, authStore.user?.id);
   if (editingId.value === expenseId) {
     cancelEdit();
   }
