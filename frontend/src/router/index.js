@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/auth';
 
 const TripPage = () => import('../views/TripPage.vue');
 const ExpensePage = () => import('../views/ExpensePage.vue');
+
 const LoginView = () => import('../views/Login.vue');
 const RegisterView = () => import('../views/Register.vue');
 
@@ -10,6 +11,7 @@ const routes = [
   { path: '/', redirect: '/expense' },
   { path: '/trip', name: 'trip', component: TripPage, meta: { requiresAuth: true } },
   { path: '/expense', name: 'expense', component: ExpensePage, meta: { requiresAuth: true } },
+
   { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
   { path: '/register', name: 'register', component: RegisterView, meta: { guestOnly: true } },
 ];
@@ -29,6 +31,7 @@ router.beforeEach(async (to) => {
 
   if (to.meta.guestOnly && authStore.isAuthenticated) {
     return { name: 'expense' };
+
   }
 
   return true;
