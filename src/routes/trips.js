@@ -1,5 +1,5 @@
 const express = require('express');
-const { createTrip, getTripById } = require('../services/tripService');
+const { createTrip, getTripById, updateTripById, deleteTripById } = require('../services/tripService');
 const { addExpense, listExpenses } = require('../services/expenseService');
 const { requireAuth } = require('../middlewares/auth');
 
@@ -23,6 +23,24 @@ router.get('/:tripId', async (req, res, next) => {
   try {
     const trip = await getTripById(req.params.tripId, req.user.id);
     return res.json(trip);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.put('/:tripId', async (req, res, next) => {
+  try {
+    const trip = await updateTripById(req.params.tripId, req.body, req.user.id);
+    return res.json(trip);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.delete('/:tripId', async (req, res, next) => {
+  try {
+    const result = await deleteTripById(req.params.tripId, req.user.id);
+    return res.json(result);
   } catch (err) {
     return next(err);
   }

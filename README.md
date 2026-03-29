@@ -32,7 +32,8 @@
 │   └── index.js                # Vercel Serverless 入口
 ├── docs/
 │   ├── supabase-schema.sql     # Supabase 数据库建表 SQL
-│   └── travelbudget-architecture.md
+│   ├── travelbudget-architecture.md
+│   └── api-contract.md         # 后端 API 契约清单（请求/响应字段）
 ├── frontend/
 │   ├── .env.example
 │   ├── package.json

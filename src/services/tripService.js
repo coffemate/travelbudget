@@ -89,9 +89,93 @@ async function getTripById(tripId, userId) {
   return rows[0];
 }
 
+async function updateTripById(tripId, payload, userId) {
+  if (!isUuid(tripId)) {
+    throw badRequest('tripId must be a valid UUID');
+  }
+
+  const { name, total_budget } = payload;
+  if (!name || total_budget == null) {
+    throw badRequest('name and total_budget are required');
+  }
+
+  const totalBudgetValue = parseNonNegativeNumber(total_budget, 'total_budget');
+
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+
+    const tripRes = await client.query('select * from public.trips where id = $1 for update', [tripId]);
+    if (!tripRes.rows[0]) {
+      const err = new Error('Trip not found');
+      err.status = 404;
+      throw err;
+    }
+
+    const trip = tripRes.rows[0];
+    if (userId && trip.owner_id !== userId) {
+      throw forbidden('You do not have access to this trip');
+    }
+
+    const spent = Number(trip.total_budget) - Number(trip.remaining_budget);
+    const nextRemaining = Number((totalBudgetValue - spent).toFixed(2));
+    if (nextRemaining < 0) {
+      throw badRequest('total_budget cannot be less than already spent amount');
+    }
+
+    const updatedRes = await client.query(
+      'update public.trips set name = $1, total_budget = $2, remaining_budget = $3 where id = $4 returning *',
+      [name, totalBudgetValue, nextRemaining, tripId],
+    );
+
+    await client.query('commit');
+    return updatedRes.rows[0];
+  } catch (err) {
+    await client.query('rollback');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+async function deleteTripById(tripId, userId) {
+  if (!isUuid(tripId)) {
+    throw badRequest('tripId must be a valid UUID');
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+
+    const tripRes = await client.query('select * from public.trips where id = $1 for update', [tripId]);
+    if (!tripRes.rows[0]) {
+      const err = new Error('Trip not found');
+      err.status = 404;
+      throw err;
+    }
+
+    const trip = tripRes.rows[0];
+    if (userId && trip.owner_id !== userId) {
+      throw forbidden('You do not have access to this trip');
+    }
+
+    await client.query('delete from public.trips where id = $1', [tripId]);
+
+    await client.query('commit');
+    return { success: true };
+  } catch (err) {
+    await client.query('rollback');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   createTrip,
   getTripById,
+  updateTripById,
+  deleteTripById,
   isUuid,
   badRequest,
   forbidden,
