@@ -1,6 +1,15 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { addExpense, createTrip, deleteExpense, getTrip, listExpenses, updateExpense } from '../api/trips';
+import {
+  addExpense,
+  createTrip,
+  deleteExpense,
+  deleteTrip,
+  getTrip,
+  listExpenses,
+  updateExpense,
+  updateTrip,
+} from '../api/trips';
 
 function startOfToday() {
   const today = new Date();
@@ -109,6 +118,43 @@ export const useBudgetStore = defineStore('budget', () => {
     await loadTrip(tripId, userId);
   }
 
+  async function updateTripAction(tripId, payload, userId) {
+    loading.value = true;
+    error.value = '';
+    try {
+      const trip = await updateTrip(tripId, payload);
+      upsertTrip(trip, userId);
+      if (currentTrip.value?.id === trip.id) {
+        currentTrip.value = trip;
+      }
+      return trip;
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function deleteTripAction(tripId, userId) {
+    loading.value = true;
+    error.value = '';
+    try {
+      await deleteTrip(tripId);
+      trips.value = trips.value.filter((t) => t.id !== tripId);
+      if (currentTrip.value?.id === tripId) {
+        currentTrip.value = null;
+        expenses.value = [];
+      }
+      saveTripsToStorage(userId);
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function refreshExpenses(tripId) {
     expenses.value = await listExpenses(tripId);
   }
@@ -180,6 +226,8 @@ export const useBudgetStore = defineStore('budget', () => {
     createTripAction,
     loadTrip,
     selectTrip,
+    updateTripAction,
+    deleteTripAction,
     addExpenseAction,
     updateExpenseAction,
     deleteExpenseAction,

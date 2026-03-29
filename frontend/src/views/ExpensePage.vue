@@ -58,16 +58,21 @@
               <input v-model="editForm.note" placeholder="可填写备注（可选）" />
             </div>
             <div class="action-row">
-              <button @click="handleSaveEdit(item.id)">保存</button>
+              <button @click="handleSaveEdit(item.id)">确认</button>
               <button type="button" class="secondary-btn" @click="cancelEdit">取消</button>
             </div>
           </template>
 
           <template v-else>
-            <div class="expense-main">
-              {{ item.category }} | {{ item.amount }} {{ item.currency }} | base {{ item.amount_in_base }}
+            <div class="row" style="justify-content: space-between; align-items: center;">
+              <div class="expense-main">
+                <span class="category-chip">{{ item.category || '未分类' }}</span>
+                <span class="amount-strong">{{ item.amount }} {{ item.currency }}</span>
+              </div>
+              <div class="expense-meta">base {{ item.amount_in_base }}</div>
             </div>
-            <div class="expense-meta">{{ formatDate(item.spent_at) }}</div>
+            <div class="expense-meta">时间：{{ formatDate(item.spent_at) }}</div>
+            <div class="expense-meta">备注：{{ item.note?.trim() ? item.note : '无备注' }}</div>
             <div class="action-row">
               <button @click="startEdit(item)">编辑</button>
               <button type="button" class="danger-btn" @click="handleDelete(item.id)">删除</button>
@@ -77,8 +82,9 @@
       </ul>
     </div>
 
-    <p v-if="store.loading" class="helper-text">Loading...</p>
-    <p v-if="store.error" class="helper-text text-danger">{{ store.error }}</p>
+    <p v-if="store.loading" class="helper-text">加载中...</p>
+    <p v-if="expenseSuccessMessage" class="helper-text text-success">{{ expenseSuccessMessage }}</p>
+    <p v-if="expenseErrorMessage" class="helper-text text-danger">{{ expenseErrorMessage }}</p>
   </section>
 </template>
 
@@ -92,6 +98,9 @@ const router = useRouter();
 const authStore = useAuthStore();
 const store = useBudgetStore();
 const editingId = ref('');
+const expenseSuccessMessage = ref('');
+const expenseErrorMessage = ref('');
+
 const editForm = reactive({
   amount: 0,
   currency: 'CNY',
@@ -103,9 +112,13 @@ const editForm = reactive({
 });
 
 onMounted(async () => {
-  store.loadTripsFromStorage(authStore.user?.id);
-  if (store.currentTrip?.id) {
-    await store.loadTrip(store.currentTrip.id, authStore.user?.id);
+  try {
+    store.loadTripsFromStorage(authStore.user?.id);
+    if (store.currentTrip?.id) {
+      await store.loadTrip(store.currentTrip.id, authStore.user?.id);
+    }
+  } catch {
+    expenseErrorMessage.value = '获取数据失败，请稍后重试';
   }
 });
 
@@ -122,6 +135,8 @@ function startEdit(item) {
   editForm.spent_at = toDateTimeLocal(item.spent_at);
   editForm.note = item.note || '';
   editForm.paid_by = item.paid_by || '';
+  expenseSuccessMessage.value = '';
+  expenseErrorMessage.value = '';
 }
 
 function cancelEdit() {
@@ -129,26 +144,40 @@ function cancelEdit() {
 }
 
 async function handleSaveEdit(expenseId) {
-  await store.updateExpenseAction(
-    expenseId,
-    {
-      amount: editForm.amount,
-      currency: editForm.currency.toUpperCase(),
-      fx_rate_to_base: editForm.fx_rate_to_base,
-      category: editForm.category,
-      spent_at: new Date(editForm.spent_at).toISOString(),
-      note: editForm.note,
-      paid_by: editForm.paid_by || null,
-    },
-    authStore.user?.id,
-  );
-  cancelEdit();
+  expenseSuccessMessage.value = '';
+  expenseErrorMessage.value = '';
+  try {
+    await store.updateExpenseAction(
+      expenseId,
+      {
+        amount: editForm.amount,
+        currency: editForm.currency.toUpperCase(),
+        fx_rate_to_base: editForm.fx_rate_to_base,
+        category: editForm.category,
+        spent_at: new Date(editForm.spent_at).toISOString(),
+        note: editForm.note,
+        paid_by: editForm.paid_by || null,
+      },
+      authStore.user?.id,
+    );
+    cancelEdit();
+    expenseSuccessMessage.value = '操作成功';
+  } catch {
+    expenseErrorMessage.value = '操作失败，请稍后重试';
+  }
 }
 
 async function handleDelete(expenseId) {
-  await store.deleteExpenseAction(expenseId, authStore.user?.id);
-  if (editingId.value === expenseId) {
-    cancelEdit();
+  expenseSuccessMessage.value = '';
+  expenseErrorMessage.value = '';
+  try {
+    await store.deleteExpenseAction(expenseId, authStore.user?.id);
+    if (editingId.value === expenseId) {
+      cancelEdit();
+    }
+    expenseSuccessMessage.value = '操作成功';
+  } catch {
+    expenseErrorMessage.value = '操作失败，请稍后重试';
   }
 }
 
@@ -163,3 +192,20 @@ function toDateTimeLocal(value) {
   return local.toISOString().slice(0, 16);
 }
 </script>
+
+<style scoped>
+.category-chip {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #ecfeff;
+  color: #0f766e;
+  font-size: 12px;
+  margin-right: 8px;
+}
+
+.amount-strong {
+  font-weight: 700;
+  font-size: 16px;
+}
+</style>

@@ -17,8 +17,8 @@
       <RouterLink to="/trip"><button>去选择行程</button></RouterLink>
     </div>
 
-    <p v-if="store.loading" class="helper-text">Loading...</p>
-    <p v-if="store.error" class="helper-text text-danger">{{ store.error }}</p>
+    <p v-if="store.loading" class="helper-text">加载中...</p>
+    <p v-if="expenseErrorMessage" class="helper-text text-danger">{{ expenseErrorMessage }}</p>
   </section>
 </template>
 
@@ -34,12 +34,19 @@ const authStore = useAuthStore();
 const store = useBudgetStore();
 const submitSuccessVersion = ref(0);
 const expenseSuccessMessage = ref('');
+const expenseErrorMessage = ref('');
 
 async function handleAddExpense(payload) {
   if (!store.currentTrip) return;
-  await store.addExpenseAction(store.currentTrip.id, payload, authStore.user?.id);
-  submitSuccessVersion.value += 1;
-  expenseSuccessMessage.value = '支出添加成功';
-  await router.push('/expense');
+  expenseErrorMessage.value = '';
+  expenseSuccessMessage.value = '';
+  try {
+    await store.addExpenseAction(store.currentTrip.id, payload, authStore.user?.id);
+    submitSuccessVersion.value += 1;
+    expenseSuccessMessage.value = '操作成功';
+    await router.push('/expense');
+  } catch {
+    expenseErrorMessage.value = '添加失败，请稍后重试';
+  }
 }
 </script>

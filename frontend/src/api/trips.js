@@ -8,6 +8,14 @@ export function getTrip(tripId) {
   return http.get(`/trips/${tripId}`).then((r) => r.data);
 }
 
+export function updateTrip(tripId, payload) {
+  return http.put(`/trips/${tripId}`, payload).then((r) => r.data);
+}
+
+export function deleteTrip(tripId) {
+  return http.delete(`/trips/${tripId}`).then((r) => r.data);
+}
+
 export function addExpense(tripId, payload) {
   return http.post(`/trips/${tripId}/expenses`, payload).then((r) => r.data);
 }
