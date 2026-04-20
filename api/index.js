@@ -1,5 +1,7 @@
+// 本地开发需要加载 .env，生产环境 Vercel 会自动注入
+require('dotenv').config();
 const express = require('express');
-const pool = require('./lib/db');
+const pool = require('./lib/db.js');
 
 const app = express();
 app.use(express.json());
