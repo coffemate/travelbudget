@@ -6,6 +6,17 @@ const pool = require('./lib/db.js');
 const app = express();
 app.use(express.json());
 
+// 健康检查接口
+app.get('/api/health', async (req, res) => {
+  try {
+    // 执行一个简单的查询来验证数据库连接
+    const result = await pool.query('SELECT NOW() as time');
+    res.json({ status: 'ok', database: 'connected', serverTime: result.rows[0].time });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: 'Database connection failed', details: err.message });
+  }
+});
+
 // 获取所有旅行计划
 app.get('/api/trips', async (req, res) => {
   try {
