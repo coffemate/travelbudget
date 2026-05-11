@@ -10,7 +10,7 @@ const LoginView = () => import('../views/Login.vue');
 const RegisterView = () => import('../views/Register.vue');
 
 const routes = [
-  { path: '/', redirect: '/expense' },
+  { path: '/', redirect: '/trip' },
   { path: '/trip', name: 'trip-list', component: TripListPage, meta: { requiresAuth: true } },
   { path: '/trip/create', name: 'trip-create', component: CreateTripPage, meta: { requiresAuth: true } },
   { path: '/expense', name: 'expense', component: ExpensePage, meta: { requiresAuth: true } },

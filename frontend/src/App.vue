@@ -6,7 +6,7 @@
           <strong class="page-title" style="font-size: 18px; margin: 0;">Travel Budget Tool</strong>
           <nav class="nav-links">
             <RouterLink v-if="authStore.isAuthenticated" class="nav-link" to="/expense">支出页</RouterLink>
-            <RouterLink v-if="authStore.isAuthenticated" class="nav-link" to="/trip">行程页</RouterLink>
+            <RouterLink v-if="authStore.isAuthenticated" class="nav-link" to="/trip">首页</RouterLink>
             <RouterLink v-if="!authStore.isAuthenticated" class="nav-link" to="/login">登录</RouterLink>
             <RouterLink v-if="!authStore.isAuthenticated" class="nav-link" to="/register">注册</RouterLink>
             <span v-if="authStore.user" class="user-chip">{{ authStore.user.email }}</span>
