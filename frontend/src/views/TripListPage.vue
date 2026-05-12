@@ -32,7 +32,7 @@
             </div>
           </div>
 
-          <p class="expense-meta">{{ trip.start_date }} ~ {{ trip.end_date }} · 共 {{ getTripDays(trip) }} 天</p>
+          <p class="expense-meta">{{ formatTripRange(trip.start_date, trip.end_date) }} · 共 {{ getTripDays(trip) }} 天</p>
 
           <div class="summary-grid">
             <div class="summary-item">
@@ -80,7 +80,7 @@
 
     <RouterLink to="/trip/create" class="fab-create">＋</RouterLink>
 
-    <p v-if="store.loading" class="helper-text">Loading...</p>
+    <p v-if="store.loading" class="helper-text">加载中...</p>
     <p v-if="store.error" class="helper-text text-danger">{{ store.error }}</p>
   </section>
 </template>
@@ -187,10 +187,30 @@ async function handleConfirmEdit(tripId) {
 }
 
 async function handleDeleteTrip(tripId) {
-  const confirmed = window.confirm('确定要删除该行程吗？删除后无法恢复。');
-  if (!confirmed) return;
+  const input = window.prompt('删除后该行程及全部支出记录无法恢复。\n请输入 YES 确认删除：');
+  if (!input || input.toLowerCase() !== 'yes') {
+    window.alert('未通过删除校验，已取消操作。');
+    return;
+  }
 
   await store.deleteTripAction(tripId, authStore.user?.id);
+}
+
+function formatTripRange(startDate, endDate) {
+  if (!startDate || !endDate) return '日期待定';
+  const s = new Date(startDate);
+  const e = new Date(endDate);
+  const sy = s.getFullYear();
+  const ey = e.getFullYear();
+  const sm = s.getMonth() + 1;
+  const em = e.getMonth() + 1;
+  const sd = s.getDate();
+  const ed = e.getDate();
+
+  if (sy === ey) {
+    return `${sy}年${sm}月${sd}日 - ${em}月${ed}日`;
+  }
+  return `${sy}年${sm}月${sd}日 - ${ey}年${em}月${ed}日`;
 }
 </script>
 

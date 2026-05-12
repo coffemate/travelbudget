@@ -2,7 +2,7 @@
   <section class="page-stack">
     <TripForm @submit="handleCreateTrip" />
 
-    <p v-if="store.loading" class="helper-text">Loading...</p>
+    <p v-if="store.loading" class="helper-text">加载中...</p>
     <p v-if="store.error" class="helper-text text-danger">{{ store.error }}</p>
   </section>
 </template>

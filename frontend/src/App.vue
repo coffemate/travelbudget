@@ -3,7 +3,7 @@
     <div class="topbar-wrap">
       <header class="card topbar">
         <div class="container nav-row" style="padding: 0;">
-          <strong class="page-title" style="font-size: 18px; margin: 0;">Travel Budget Tool</strong>
+          <strong class="page-title" style="font-size: 18px; margin: 0;">旅行预算记账</strong>
           <nav class="nav-links">
             <RouterLink v-if="authStore.isAuthenticated" class="nav-link" to="/trip">首页</RouterLink>
             <RouterLink v-if="!authStore.isAuthenticated" class="nav-link" to="/login">登录</RouterLink>
