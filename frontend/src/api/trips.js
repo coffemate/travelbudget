@@ -1,5 +1,9 @@
 import http from './http';
 
+export function listTrips() {
+  return http.get('/trips').then((r) => r.data);
+}
+
 export function createTrip(payload) {
   return http.post('/trips', payload).then((r) => r.data);
 }
