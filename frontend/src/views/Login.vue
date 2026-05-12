@@ -27,6 +27,6 @@ const password = ref('');
 
 async function handleLogin() {
   await authStore.login(email.value, password.value);
-  await router.push(route.query.redirect || '/expense');
+  await router.push(route.query.redirect || '/trip');
 }
 </script>

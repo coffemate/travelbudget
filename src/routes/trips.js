@@ -1,11 +1,21 @@
 const express = require('express');
-const { createTrip, getTripById, updateTripById, deleteTripById } = require('../services/tripService');
+const { createTrip, listTripsByOwner, getTripById, updateTripById, deleteTripById } = require('../services/tripService');
 const { addExpense, listExpenses } = require('../services/expenseService');
 const { requireAuth } = require('../middlewares/auth');
 
 const router = express.Router();
 
 router.use(requireAuth);
+
+
+router.get('/', async (req, res, next) => {
+  try {
+    const trips = await listTripsByOwner(req.user.id);
+    return res.json(trips);
+  } catch (err) {
+    return next(err);
+  }
+});
 
 router.post('/', async (req, res, next) => {
   try {
