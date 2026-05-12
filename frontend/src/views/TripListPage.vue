@@ -21,7 +21,6 @@
           v-for="trip in filteredTrips"
           :key="trip.id"
           class="trip-card"
-          
           @click="openTrip(trip.id)"
         >
           <div class="trip-card-top">
@@ -60,7 +59,7 @@
 
           <div class="action-row" @click.stop>
             <button type="button" @click="openTrip(trip.id)">查看支出</button>
-            <button type="button" class="secondary-btn" @click="handleQuickExpense(trip.id)">记一笔</button>
+            <button type="button" class="secondary-btn" @click="handleQuickAddExpense(trip.id)">记一笔</button>
             <button type="button" class="secondary-btn" @click="startEdit(trip)">编辑</button>
             <button type="button" class="danger-btn" @click="handleDeleteTrip(trip.id)">删除</button>
           </div>
@@ -158,13 +157,8 @@ async function openTrip(tripId) {
   await router.push(`/trip/${tripId}`);
 }
 
-async function handleQuickExpense(tripId) {
+async function handleQuickAddExpense(tripId) {
   await router.push(`/trip/${tripId}/add`);
-}
-
-async function handleQuickExpense(tripId) {
-  await store.selectTrip(tripId, authStore.user?.id);
-  await router.push('/expense/add');
 }
 
 function startEdit(trip) {
@@ -203,7 +197,6 @@ async function handleDeleteTrip(tripId) {
 .trip-card-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
 .trip-card { border: 1px solid var(--border); border-radius: 16px; padding: 14px; background: var(--surface); cursor: pointer; transition: transform .15s ease; }
 .trip-card:active { transform: scale(.99); }
-.trip-card--current { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
 .trip-card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
 .trip-name { margin: 0; font-size: 17px; }
 .tag-group { display: flex; gap: 6px; flex-wrap: wrap; }
