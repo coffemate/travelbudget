@@ -18,7 +18,7 @@ const authStore = useAuthStore();
 const store = useBudgetStore();
 
 async function handleCreateTrip(payload) {
-  await store.createTripAction(payload, authStore.user?.id);
-  await router.push('/expense');
+  const trip = await store.createTripAction(payload, authStore.user?.id);
+  await router.push(`/trip/${trip.id}`);
 }
 </script>
