@@ -162,6 +162,11 @@ async function handleQuickExpense(tripId) {
   await router.push(`/trip/${tripId}/add`);
 }
 
+async function handleQuickExpense(tripId) {
+  await store.selectTrip(tripId, authStore.user?.id);
+  await router.push('/expense/add');
+}
+
 function startEdit(trip) {
   editingTripId.value = trip.id;
   editForm.name = trip.name;
