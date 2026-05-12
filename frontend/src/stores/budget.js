@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import {
   addExpense,
   createTrip,
+  listTrips,
   deleteExpense,
   deleteTrip,
   getTrip,
@@ -42,6 +43,23 @@ export const useBudgetStore = defineStore('budget', () => {
     if (idx === -1) trips.value.unshift(trip);
     else trips.value[idx] = trip;
     saveTripsToStorage(userId);
+  }
+
+
+  async function syncTripsAction(userId) {
+    loading.value = true;
+    error.value = '';
+    try {
+      const remoteTrips = await listTrips();
+      trips.value = Array.isArray(remoteTrips) ? remoteTrips : [];
+      saveTripsToStorage(userId);
+      return trips.value;
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
   }
 
   async function createTripAction(payload, userId) {
@@ -154,6 +172,7 @@ export const useBudgetStore = defineStore('budget', () => {
     error,
     trips,
     loadTripsFromStorage,
+    syncTripsAction,
     createTripAction,
     loadTripWithExpenses,
     updateTripAction,

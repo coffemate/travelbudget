@@ -108,8 +108,11 @@ const filteredTrips = computed(() => {
 
 const emptyMessage = computed(() => (store.trips.length === 0 ? '暂无行程，请先创建。' : '没有匹配的行程。'));
 
-onMounted(() => {
+onMounted(async () => {
   store.loadTripsFromStorage(authStore.user?.id);
+  try {
+    await store.syncTripsAction(authStore.user?.id);
+  } catch {}
 });
 
 function getTripDays(trip) {
