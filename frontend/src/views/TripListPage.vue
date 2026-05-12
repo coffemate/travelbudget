@@ -21,14 +21,14 @@
           v-for="trip in filteredTrips"
           :key="trip.id"
           class="trip-card"
-          :class="{ 'trip-card--current': trip.id === store.currentTrip?.id }"
+          
           @click="openTrip(trip.id)"
         >
           <div class="trip-card-top">
             <h3 class="trip-name">{{ trip.name }}</h3>
             <div class="tag-group">
-              <span v-if="trip.id === store.currentTrip?.id" class="trip-tag trip-tag--current">当前行程</span>
-              <span v-else-if="getTripStatus(trip) === 'upcoming'" class="trip-tag trip-tag--upcoming">即将开始</span>
+              <span v-if="getTripStatus(trip) === 'upcoming'" class="trip-tag trip-tag--upcoming">即将开始</span>
+              <span v-else-if="getTripStatus(trip) === 'ongoing'" class="trip-tag trip-tag--current">进行中</span>
               <span v-else-if="getTripStatus(trip) === 'finished'" class="trip-tag trip-tag--finished">已结束</span>
             </div>
           </div>
@@ -59,9 +59,7 @@
           </div>
 
           <div class="action-row" @click.stop>
-            <button :disabled="trip.id === store.currentTrip?.id" @click="handleSelectTrip(trip.id)">
-              {{ trip.id === store.currentTrip?.id ? '当前行程' : '设为当前行程' }}
-            </button>
+            <button type="button" @click="openTrip(trip.id)">查看支出</button>
             <button type="button" class="secondary-btn" @click="handleQuickExpense(trip.id)">记一笔</button>
             <button type="button" class="secondary-btn" @click="startEdit(trip)">编辑</button>
             <button type="button" class="danger-btn" @click="handleDeleteTrip(trip.id)">删除</button>
@@ -157,12 +155,11 @@ function formatMoney(amount) {
 }
 
 async function openTrip(tripId) {
-  await store.selectTrip(tripId, authStore.user?.id);
-  await router.push('/expense');
+  await router.push(`/trip/${tripId}`);
 }
 
-async function handleSelectTrip(tripId) {
-  await store.selectTrip(tripId, authStore.user?.id);
+async function handleQuickExpense(tripId) {
+  await router.push(`/trip/${tripId}/add`);
 }
 
 async function handleQuickExpense(tripId) {
