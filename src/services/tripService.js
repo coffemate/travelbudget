@@ -70,6 +70,20 @@ async function createTrip(payload) {
   return rows[0];
 }
 
+
+async function listTripsByOwner(userId) {
+  if (!userId || !isUuid(userId)) {
+    throw badRequest('userId must be a valid UUID');
+  }
+
+  const { rows } = await pool.query(
+    'select * from public.trips where owner_id = $1 order by created_at desc',
+    [userId],
+  );
+
+  return rows;
+}
+
 async function getTripById(tripId, userId) {
   if (!isUuid(tripId)) {
     throw badRequest('tripId must be a valid UUID');
@@ -173,6 +187,7 @@ async function deleteTripById(tripId, userId) {
 
 module.exports = {
   createTrip,
+  listTripsByOwner,
   getTripById,
   updateTripById,
   deleteTripById,

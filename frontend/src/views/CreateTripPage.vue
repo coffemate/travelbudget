@@ -2,7 +2,7 @@
   <section class="page-stack">
     <TripForm @submit="handleCreateTrip" />
 
-    <p v-if="store.loading" class="helper-text">Loading...</p>
+    <p v-if="store.loading" class="helper-text">加载中...</p>
     <p v-if="store.error" class="helper-text text-danger">{{ store.error }}</p>
   </section>
 </template>
@@ -18,7 +18,7 @@ const authStore = useAuthStore();
 const store = useBudgetStore();
 
 async function handleCreateTrip(payload) {
-  await store.createTripAction(payload, authStore.user?.id);
-  await router.push('/expense');
+  const trip = await store.createTripAction(payload, authStore.user?.id);
+  await router.push(`/trip/${trip.id}`);
 }
 </script>
