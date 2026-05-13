@@ -30,26 +30,11 @@
             </div>
             <div class="expense-meta">{{ item.note?.trim() ? item.note : '无备注' }}</div>
             <div class="action-row" style="margin-top: 8px;">
-              <button type="button" class="secondary-btn" @click="openEdit(item)">编辑</button>
+              <button type="button" class="secondary-btn" @click="goEdit(item.id)">编辑</button>
             </div>
           </div>
         </li>
       </ul>
-    </div>
-
-    <div v-if="editingItem" class="card">
-      <h3 class="section-title">编辑支出记录</h3>
-      <div class="form-grid">
-        <input v-model.number="editForm.amount" type="number" min="0.01" step="0.01" placeholder="金额" />
-        <input v-model="editForm.category" placeholder="分类" />
-        <input v-model="editForm.spent_at" type="datetime-local" />
-        <input v-model="editForm.note" placeholder="备注" />
-      </div>
-      <div class="action-row">
-        <button @click="saveEdit">保存修改</button>
-        <button type="button" class="secondary-btn" @click="editingItem = null">取消</button>
-        <button type="button" class="danger-btn" @click="handleDelete(editingItem.id)">删除记录</button>
-      </div>
     </div>
 
     <RouterLink v-if="trip" :to="`/trip/${tripId}/add`" class="fab-create">＋</RouterLink>
@@ -60,15 +45,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useBudgetStore } from '../stores/budget';
 
 const route = useRoute(); const router = useRouter(); const authStore = useAuthStore(); const store = useBudgetStore();
 const trip = ref(null); const expenses = ref([]); const tripId = route.params.tripId;
-const editingItem = ref(null);
-const editForm = reactive({ amount: 0, currency: 'CNY', category: '', spent_at: '', note: '', fx_rate_to_base: 1 });
 
 const spent = computed(() => Number(trip.value?.total_budget || 0) - Number(trip.value?.remaining_budget || 0));
 const remain = computed(() => Number(trip.value?.remaining_budget || 0));
@@ -91,33 +74,8 @@ async function loadData() {
   expenses.value = result.expenses;
 }
 
-function openEdit(item) {
-  editingItem.value = item;
-  editForm.amount = Number(item.amount); editForm.currency = item.currency; editForm.category = item.category || '';
-  editForm.spent_at = toDateTimeLocal(item.spent_at); editForm.note = item.note || ''; editForm.fx_rate_to_base = Number(item.fx_rate_to_base || 1);
-}
-
-async function saveEdit() {
-  if (!editingItem.value) return;
-  await store.updateExpenseAction(editingItem.value.id, {
-    amount: editForm.amount,
-    currency: editForm.currency.toUpperCase(),
-    fx_rate_to_base: editForm.fx_rate_to_base,
-    category: editForm.category || 'general',
-    spent_at: new Date(editForm.spent_at).toISOString(),
-    note: editForm.note,
-    paid_by: null,
-  }, authStore.user?.id);
-  editingItem.value = null;
-  await loadData();
-}
-
-async function handleDelete(expenseId) {
-  const confirmed = window.confirm('确认删除这条记录吗？');
-  if (!confirmed) return;
-  await store.deleteExpenseAction(expenseId, authStore.user?.id);
-  editingItem.value = null;
-  await loadData();
+function goEdit(expenseId) {
+  router.push(`/trip/${tripId}/add?expenseId=${expenseId}`);
 }
 
 function formatTripRange(startDate, endDate) {
@@ -137,7 +95,6 @@ function formatTripRange(startDate, endDate) {
 const money = (v) => Number(v || 0).toFixed(2);
 const formatDay = (v) => new Date(v).toLocaleDateString('zh-CN');
 const formatClock = (v) => new Date(v).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-const toDateTimeLocal = (v) => { const d = new Date(v); const o = d.getTimezoneOffset(); return new Date(d.getTime() - o * 60000).toISOString().slice(0, 16); };
 </script>
 
 <style scoped>
