@@ -1,7 +1,7 @@
 <template>
   <section class="page-stack">
     <div class="card add-topbar">
-      <button type="button" class="secondary-btn" @click="goBack">← 返回</button>
+      <n-button size="small" secondary @click="goBack">← 返回</n-button>
       <div class="add-title">{{ isEditMode ? '编辑支出' : '记一笔' }}</div>
       <div class="add-time">{{ readableTime }}</div>
     </div>

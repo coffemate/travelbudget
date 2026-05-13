@@ -2,7 +2,7 @@
   <section class="page-stack">
     <div v-if="trip" class="card">
       <div class="row" style="justify-content: space-between; align-items: center;">
-        <button type="button" class="secondary-btn" @click="router.push('/trip')">返回</button>
+        <n-button size="small" secondary @click="router.push('/trip')">返回</n-button>
         <div class="summary-label">{{ trip.name }}</div>
       </div>
       <p class="body-text">{{ formatTripRange(trip.start_date, trip.end_date) }} · 共{{ tripDays }}天</p>
