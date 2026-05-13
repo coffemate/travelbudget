@@ -1,249 +1,84 @@
 <template>
   <section class="page-stack dashboard-page">
-    <div class="card">
+    <n-card>
       <div class="dashboard-header">
         <div>
           <h2 class="section-title" style="margin-bottom: 4px;">我的行程</h2>
           <p class="body-text">一眼查看预算状态，快速切换与记账</p>
         </div>
-        <RouterLink to="/trip/create"><button>新建行程</button></RouterLink>
+        <RouterLink to="/trip/create"><n-button type="primary">新建行程</n-button></RouterLink>
       </div>
+      <n-input v-model:value="searchText" placeholder="搜索行程名称" clearable />
+    </n-card>
 
-      <div class="search-wrap">
-        <input v-model.trim="searchText" placeholder="搜索行程名称" />
-      </div>
-    </div>
+    <p v-if="filteredTrips.length === 0" class="body-text">{{ emptyMessage }}</p>
+    <n-space v-else vertical :size="12">
+      <n-card v-for="trip in filteredTrips" :key="trip.id" hoverable @click="openTrip(trip.id)">
+        <div class="trip-card-top">
+          <h3 class="trip-name">{{ trip.name }}</h3>
+          <n-tag size="small" round :type="getTripStatus(trip) === 'ongoing' ? 'success' : getTripStatus(trip) === 'upcoming' ? 'info' : 'default'">{{ getTripStatusText(trip) }}</n-tag>
+        </div>
+        <p class="expense-meta">{{ formatTripRange(trip.start_date, trip.end_date) }} · 共 {{ getTripDays(trip) }} 天</p>
+        <div class="summary-grid">
+          <div class="summary-item"><div class="summary-label">总预算</div><div class="summary-value">{{ formatMoney(trip.total_budget) }}</div></div>
+          <div class="summary-item"><div class="summary-label">已支出</div><div class="summary-value summary-value--spent">{{ formatMoney(getSpent(trip)) }}</div></div>
+          <div class="summary-item"><div class="summary-label">剩余预算</div><div class="summary-value" :class="{ 'text-danger': Number(trip.remaining_budget) < 0 }">{{ formatMoney(trip.remaining_budget) }}</div></div>
+        </div>
+        <n-progress style="margin-top:12px" type="line" :percentage="getProgressPercent(trip)" :status="isOverBudget(trip) ? 'error' : 'success'" :show-indicator="false" />
+        <n-space class="action-row" @click.stop>
+          <n-button size="small" @click="openTrip(trip.id)">查看支出</n-button>
+          <n-button size="small" type="primary" secondary @click="handleQuickAddExpense(trip.id)">记一笔</n-button>
+          <n-button size="small" secondary @click="startEdit(trip)">编辑</n-button>
+          <n-button size="small" type="error" secondary @click="openDeleteDialog(trip.id)">删除</n-button>
+        </n-space>
+      </n-card>
+    </n-space>
 
-    <div class="card">
-      <p v-if="filteredTrips.length === 0" class="body-text">{{ emptyMessage }}</p>
-      <ul v-else class="trip-card-list">
-        <li
-          v-for="trip in filteredTrips"
-          :key="trip.id"
-          class="trip-card"
-          @click="openTrip(trip.id)"
-        >
-          <div class="trip-card-top">
-            <h3 class="trip-name">{{ trip.name }}</h3>
-            <div class="tag-group">
-              <span v-if="getTripStatus(trip) === 'upcoming'" class="trip-tag trip-tag--upcoming">即将开始</span>
-              <span v-else-if="getTripStatus(trip) === 'ongoing'" class="trip-tag trip-tag--current">进行中</span>
-              <span v-else-if="getTripStatus(trip) === 'finished'" class="trip-tag trip-tag--finished">已结束</span>
-            </div>
-          </div>
+    <n-modal v-model:show="editModalVisible" preset="card" title="编辑行程" style="max-width: 420px">
+      <n-space vertical>
+        <n-input v-model:value="editForm.name" placeholder="请输入行程名称" />
+        <n-input-number v-model:value="editForm.total_budget" :min="0" style="width: 100%" placeholder="请输入总预算" />
+        <n-space justify="end">
+          <n-button secondary @click="editModalVisible = false">取消</n-button>
+          <n-button type="primary" :loading="saving" @click="handleConfirmEdit">确认提交</n-button>
+        </n-space>
+      </n-space>
+    </n-modal>
 
-          <p class="expense-meta">{{ formatTripRange(trip.start_date, trip.end_date) }} · 共 {{ getTripDays(trip) }} 天</p>
-
-          <div class="summary-grid">
-            <div class="summary-item">
-              <div class="summary-label">总预算</div>
-              <div class="summary-value">{{ formatMoney(trip.total_budget) }}</div>
-            </div>
-            <div class="summary-item">
-              <div class="summary-label">已支出</div>
-              <div class="summary-value summary-value--spent">{{ formatMoney(getSpent(trip)) }}</div>
-            </div>
-            <div class="summary-item">
-              <div class="summary-label">剩余预算</div>
-              <div class="summary-value" :class="{ 'text-danger': Number(trip.remaining_budget) < 0 }">{{ formatMoney(trip.remaining_budget) }}</div>
-            </div>
-          </div>
-
-          <div class="progress-track">
-            <div
-              class="progress-fill"
-              :class="{ 'progress-fill--danger': isOverBudget(trip) }"
-              :style="{ width: `${getProgressPercent(trip)}%` }"
-            ></div>
-          </div>
-
-          <div class="action-row" @click.stop>
-            <button type="button" @click="openTrip(trip.id)">查看支出</button>
-            <button type="button" class="secondary-btn" @click="handleQuickAddExpense(trip.id)">记一笔</button>
-            <button type="button" class="secondary-btn" @click="startEdit(trip)">编辑</button>
-            <button type="button" class="danger-btn" @click="handleDeleteTrip(trip.id)">删除</button>
-          </div>
-
-          <div v-if="editingTripId === trip.id" class="edit-inline" @click.stop>
-            <div class="form-grid" style="margin-top: 12px;">
-              <input v-model="editForm.name" placeholder="请输入行程名称" />
-              <input v-model.number="editForm.total_budget" type="number" min="0" step="0.01" placeholder="请输入总预算" />
-            </div>
-            <div class="action-row">
-              <button @click="handleConfirmEdit(trip.id)">确认</button>
-              <button type="button" class="secondary-btn" @click="cancelEdit">取消</button>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </div>
-
-    <RouterLink to="/trip/create" class="fab-create">＋</RouterLink>
-
-    <p v-if="store.loading" class="helper-text">加载中...</p>
-    <p v-if="store.error" class="helper-text text-danger">{{ store.error }}</p>
+    <n-modal v-model:show="deleteModalVisible" preset="card" title="删除行程确认" style="max-width: 420px">
+      <n-space vertical>
+        <p class="body-text">删除后该行程及全部支出记录无法恢复，请输入 YES 确认。</p>
+        <n-input v-model:value="deleteConfirm" placeholder="请输入 YES" />
+        <n-button type="error" :disabled="deleteConfirm !== 'YES'" :loading="saving" @click="handleDeleteTrip">删除行程</n-button>
+      </n-space>
+    </n-modal>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useMessage } from 'naive-ui';
 import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useBudgetStore } from '../stores/budget';
-
-const authStore = useAuthStore();
-const store = useBudgetStore();
-const router = useRouter();
-const editingTripId = ref('');
-const searchText = ref('');
-const editForm = reactive({
-  name: '',
-  total_budget: 0,
-});
-
-const filteredTrips = computed(() => {
-  if (!searchText.value) return store.trips;
-  return store.trips.filter((trip) => trip.name?.toLowerCase().includes(searchText.value.toLowerCase()));
-});
-
+const message = useMessage();
+const authStore = useAuthStore(); const store = useBudgetStore(); const router = useRouter();
+const searchText = ref(''); const editModalVisible = ref(false); const deleteModalVisible = ref(false); const saving = ref(false);
+const currentTripId = ref(''); const deleteConfirm = ref('');
+const editForm = reactive({ name: '', total_budget: 0 });
+const filteredTrips = computed(() => !searchText.value ? store.trips : store.trips.filter((trip) => trip.name?.toLowerCase().includes(searchText.value.toLowerCase())));
 const emptyMessage = computed(() => (store.trips.length === 0 ? '暂无行程，请先创建。' : '没有匹配的行程。'));
-
-onMounted(async () => {
-  store.loadTripsFromStorage(authStore.user?.id);
-  try {
-    await store.syncTripsAction(authStore.user?.id);
-  } catch {}
-});
-
-function getTripDays(trip) {
-  if (!trip.start_date || !trip.end_date) return 0;
-  const start = new Date(trip.start_date);
-  const end = new Date(trip.end_date);
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-  const diff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  return Math.max(0, diff);
-}
-
-function getTripStatus(trip) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const start = new Date(trip.start_date);
-  const end = new Date(trip.end_date);
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-
-  if (today < start) return 'upcoming';
-  if (today > end) return 'finished';
-  return 'ongoing';
-}
-
-function getSpent(trip) {
-  return Number(trip.total_budget || 0) - Number(trip.remaining_budget || 0);
-}
-
-function isOverBudget(trip) {
-  return Number(trip.remaining_budget) < 0;
-}
-
-function getProgressPercent(trip) {
-  const total = Number(trip.total_budget || 0);
-  if (total <= 0) return 0;
-  return Math.min(100, Number((((getSpent(trip) / total) * 100)).toFixed(2)));
-}
-
-function formatMoney(amount) {
-  return Number(amount || 0).toFixed(2);
-}
-
-async function openTrip(tripId) {
-  await router.push(`/trip/${tripId}`);
-}
-
-async function handleQuickAddExpense(tripId) {
-  await router.push(`/trip/${tripId}/add`);
-}
-
-function startEdit(trip) {
-  editingTripId.value = trip.id;
-  editForm.name = trip.name;
-  editForm.total_budget = Number(trip.total_budget);
-}
-
-function cancelEdit() {
-  editingTripId.value = '';
-}
-
-async function handleConfirmEdit(tripId) {
-  await store.updateTripAction(
-    tripId,
-    {
-      name: editForm.name,
-      total_budget: editForm.total_budget,
-    },
-    authStore.user?.id,
-  );
-  cancelEdit();
-}
-
-async function handleDeleteTrip(tripId) {
-  const input = window.prompt('删除后该行程及全部支出记录无法恢复。\n请输入 YES 确认删除：');
-  if (!input || input.toLowerCase() !== 'yes') {
-    window.alert('未通过删除校验，已取消操作。');
-    return;
-  }
-
-  await store.deleteTripAction(tripId, authStore.user?.id);
-}
-
-function formatTripRange(startDate, endDate) {
-  if (!startDate || !endDate) return '日期待定';
-  const s = new Date(startDate);
-  const e = new Date(endDate);
-  const sy = s.getFullYear();
-  const ey = e.getFullYear();
-  const sm = s.getMonth() + 1;
-  const em = e.getMonth() + 1;
-  const sd = s.getDate();
-  const ed = e.getDate();
-
-  if (sy === ey) {
-    return `${sy}年${sm}月${sd}日 - ${em}月${ed}日`;
-  }
-  return `${sy}年${sm}月${sd}日 - ${ey}年${em}月${ed}日`;
-}
+onMounted(async () => { store.loadTripsFromStorage(authStore.user?.id); try { await store.syncTripsAction(authStore.user?.id); } catch {} });
+const getTripDays = (trip) => Math.max(0, Math.floor((new Date(trip.end_date).setHours(0,0,0,0)-new Date(trip.start_date).setHours(0,0,0,0))/(1000*60*60*24))+1);
+function getTripStatus(trip){const t=new Date();t.setHours(0,0,0,0);const s=new Date(trip.start_date);const e=new Date(trip.end_date);s.setHours(0,0,0,0);e.setHours(0,0,0,0);if(t<s)return 'upcoming';if(t>e)return 'finished';return 'ongoing';}
+const getTripStatusText=(trip)=>({upcoming:'即将开始',ongoing:'进行中',finished:'已结束'}[getTripStatus(trip)]);
+const getSpent=(trip)=>Number(trip.total_budget||0)-Number(trip.remaining_budget||0); const isOverBudget=(trip)=>Number(trip.remaining_budget)<0;
+const getProgressPercent=(trip)=>{const total=Number(trip.total_budget||0);if(total<=0)return 0;return Math.min(100,Number((((getSpent(trip)/total)*100)).toFixed(2)));};
+const formatMoney=(a)=>Number(a||0).toFixed(2);
+const openTrip=async(id)=>router.push(`/trip/${id}`); const handleQuickAddExpense=async(id)=>router.push(`/trip/${id}/add`);
+function startEdit(trip){currentTripId.value=trip.id;editForm.name=trip.name;editForm.total_budget=Number(trip.total_budget);editModalVisible.value=true;}
+async function handleConfirmEdit(){saving.value=true; try{await store.updateTripAction(currentTripId.value,{name:editForm.name,total_budget:editForm.total_budget},authStore.user?.id);message.success('保存成功');editModalVisible.value=false;}catch{message.error('操作失败');} finally{saving.value=false;}}
+function openDeleteDialog(id){currentTripId.value=id;deleteConfirm.value='';deleteModalVisible.value=true;}
+async function handleDeleteTrip(){saving.value=true;try{await store.deleteTripAction(currentTripId.value,authStore.user?.id);message.success('删除成功');deleteModalVisible.value=false;}catch{message.error('操作失败');}finally{saving.value=false;}}
+function formatTripRange(startDate,endDate){if(!startDate||!endDate)return '日期待定';const s=new Date(startDate),e=new Date(endDate),sy=s.getFullYear(),ey=e.getFullYear(),sm=s.getMonth()+1,em=e.getMonth()+1,sd=s.getDate(),ed=e.getDate();if(sy===ey)return `${sy}年${sm}月${sd}日 - ${em}月${ed}日`;return `${sy}年${sm}月${sd}日 - ${ey}年${em}月${ed}日`;}
 </script>
-
-<style scoped>
-.dashboard-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.search-wrap { margin-top: 12px; }
-.trip-card-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
-.trip-card { border: 1px solid var(--border); border-radius: 16px; padding: 14px; background: var(--surface); cursor: pointer; transition: transform .15s ease; }
-.trip-card:active { transform: scale(.99); }
-.trip-card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
-.trip-name { margin: 0; font-size: 17px; }
-.tag-group { display: flex; gap: 6px; flex-wrap: wrap; }
-.trip-tag { border-radius: 999px; font-size: 12px; padding: 4px 8px; }
-.trip-tag--current { background: #ccfbf1; color: #115e59; }
-.trip-tag--upcoming { background: #dbeafe; color: #1d4ed8; }
-.trip-tag--finished { background: #e2e8f0; color: #334155; }
-.progress-fill--danger { background: linear-gradient(90deg, #f87171, #dc2626); }
-.fab-create {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  width: 52px;
-  height: 52px;
-  border-radius: 999px;
-  background: var(--primary);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  box-shadow: var(--shadow);
-}
-@media (min-width: 768px) {
-  .fab-create { display: none; }
-}
-</style>
