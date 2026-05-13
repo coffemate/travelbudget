@@ -65,8 +65,8 @@ onMounted(async () => {
       return;
     }
     const note = target.note || '';
-    const methodMatch = note.match(/^\[(cash|card|wallet)\]\s?/i);
-    const payMethod = methodMatch?.[1]?.toLowerCase() || 'cash';
+    const methodMatch = note.match(/^\[(mobile|cash|card)\]\s?/i);
+    const payMethod = methodMatch?.[1]?.toLowerCase() || 'mobile';
     const pureNote = methodMatch ? note.replace(methodMatch[0], '') : note;
     formInitialData.value = {
       amount: Number(target.amount),

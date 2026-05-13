@@ -23,15 +23,12 @@
             <div>{{ formatDay(item.spent_at) }}</div>
             <div class="helper-text">{{ formatClock(item.spent_at) }}</div>
           </div>
-          <div class="timeline-card">
+          <div class="timeline-card" @click="goEdit(item.id)">
             <div class="row" style="justify-content: space-between; align-items: center;">
-              <span class="category-chip">{{ item.category || '未分类' }}</span>
+              <span class="category-chip">{{ categoryLabel(item.category) }}</span>
               <span class="amount-strong">{{ item.amount }} {{ item.currency }}</span>
             </div>
             <div class="expense-meta">{{ item.note?.trim() ? item.note : '无备注' }}</div>
-            <div class="action-row" style="margin-top: 8px;">
-              <button type="button" class="secondary-btn" @click="goEdit(item.id)">编辑</button>
-            </div>
           </div>
         </li>
       </ul>
@@ -95,13 +92,14 @@ function formatTripRange(startDate, endDate) {
 const money = (v) => Number(v || 0).toFixed(2);
 const formatDay = (v) => new Date(v).toLocaleDateString('zh-CN');
 const formatClock = (v) => new Date(v).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+const categoryLabel = (c) => ({ food: '餐饮', transport: '交通', hotel: '住宿', ticket: '门票', shopping: '购物', general: '其他' }[c] || '未分类');
 </script>
 
 <style scoped>
 .timeline-list { list-style:none; margin:0; padding:0; display:grid; gap:12px; }
 .timeline-item { display:grid; grid-template-columns: 84px 1fr; gap:10px; align-items: stretch; }
 .timeline-time { font-size: 12px; color: var(--muted); padding-top: 8px; }
-.timeline-card { border:1px solid var(--border); border-radius:14px; padding:12px; background:#fff; }
+.timeline-card { border:1px solid var(--border); border-radius:14px; padding:12px; background:#fff; cursor:pointer; }
 .category-chip { display:inline-block; padding:4px 8px; border-radius:999px; background:#ecfeff; color:#0f766e; font-size:12px; }
 .amount-strong { font-weight:800; font-size:18px; }
 .fab-create { position: fixed; right: 20px; bottom: 20px; width:52px; height:52px; border-radius:999px; background: var(--primary); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:30px; box-shadow: var(--shadow); }

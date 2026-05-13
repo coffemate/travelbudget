@@ -48,8 +48,8 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'delete']);
 
 const categories = [{ value: 'food', label: '餐饮' }, { value: 'transport', label: '交通' }, { value: 'hotel', label: '住宿' }, { value: 'ticket', label: '门票' }, { value: 'shopping', label: '购物' }, { value: 'general', label: '其他' }];
-const payMethods = [{ value: 'cash', label: '现金' }, { value: 'card', label: '刷卡' }, { value: 'wallet', label: '钱包' }];
-const initialForm = () => ({ amount: 0, currency: 'CNY', fx_rate_to_base: 1, category: 'food', pay_method: 'cash', spent_at: '', note: '' });
+const payMethods = [{ value: 'mobile', label: '手机' }, { value: 'cash', label: '现金' }, { value: 'card', label: '刷卡' }];
+const initialForm = () => ({ amount: 0, currency: 'CNY', fx_rate_to_base: 1, category: 'food', pay_method: 'mobile', spent_at: '', note: '' });
 const form = reactive(initialForm());
 
 function hydrateFromProps() {
