@@ -130,6 +130,30 @@ button:disabled {
   cursor: not-allowed;
 }
 
+
+button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.secondary-btn {
+  background: var(--surface-soft);
+  color: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+.secondary-btn:hover {
+  background: #eef2f7;
+}
+
+.danger-btn {
+  background: #ef4444;
+  color: #fff;
+}
+
+.danger-btn:hover {
+  background: #dc2626;
+}
+
 .page-title {
   margin: 0 0 4px;
   font-size: 22px;
