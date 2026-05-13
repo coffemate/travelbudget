@@ -29,8 +29,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, h, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { NButton, useDialog, useMessage } from 'naive-ui';
 import ExpenseForm from '../components/ExpenseForm.vue';
 import { useAuthStore } from '../stores/auth';
 import { useBudgetStore } from '../stores/budget';
@@ -39,6 +40,8 @@ const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const store = useBudgetStore();
+const message = useMessage();
+const dialog = useDialog();
 const trip = ref(null);
 const tripId = route.params.tripId;
 const expenseId = route.query.expenseId;
@@ -98,6 +101,7 @@ async function handleSubmit(payload) {
       await store.addExpenseAction(tripId, payload, authStore.user?.id);
     }
     submitSuccessVersion.value += 1;
+    message.success('保存成功');
     expenseSuccessMessage.value = '操作成功';
     await router.push(`/trip/${tripId}`);
   } catch {
@@ -107,9 +111,15 @@ async function handleSubmit(payload) {
 
 async function handleDelete() {
   if (!expenseId) return;
-  if (!window.confirm('确认删除这条支出记录吗？')) return;
-  await store.deleteExpenseAction(expenseId, authStore.user?.id);
-  await router.push(`/trip/${tripId}`);
+  dialog.warning({
+    title: '删除确认',
+    content: '确认删除这条支出记录吗？',
+    action: () => h(NButton, { type: 'error', onClick: async () => {
+      await store.deleteExpenseAction(expenseId, authStore.user?.id);
+      message.success('删除成功');
+      await router.push(`/trip/${tripId}`);
+    } }, { default: () => '删除支出' }),
+  });
 }
 
 function goBack() { router.push(`/trip/${tripId}`); }
