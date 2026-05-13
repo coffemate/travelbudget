@@ -26,6 +26,6 @@ const password = ref('');
 
 async function handleRegister() {
   await authStore.register(email.value, password.value);
-  await router.push('/expense');
+  await router.push('/trip');
 }
 </script>
