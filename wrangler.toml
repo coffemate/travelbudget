@@ -1,0 +1,8 @@
+name = "travelbudget-api"
+main = "src/index.ts"
+compatibility_date = "2026-05-23"
+
+[vars]
+# SUPABASE_URL = "https://<project-ref>.supabase.co"
+# SUPABASE_ANON_KEY = "<anon-key>"
+# SUPABASE_JWT_SECRET = "<jwt-secret-optional>"
