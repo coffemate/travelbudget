@@ -6,12 +6,16 @@ import { errorResponse, json } from './utils/http';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    console.log('[worker] request', { method: request.method, url: request.url });
-    console.log('[worker] env check', {
-      hasUrl: Boolean(env.SUPABASE_URL),
-      hasKey: Boolean(env.SUPABASE_ANON_KEY),
-      hasJwtSecret: Boolean(env.SUPABASE_JWT_SECRET),
-    });
+    const runtimeEnv = env as Record<string, string | undefined>;
+    const isProduction = runtimeEnv.NODE_ENV === 'production' || runtimeEnv.ENVIRONMENT === 'production';
+    if (!isProduction) {
+      console.debug('[worker] request', { method: request.method, path: new URL(request.url).pathname });
+      console.debug('[worker] env ready', {
+        hasUrl: Boolean(env.SUPABASE_URL),
+        hasKey: Boolean(env.SUPABASE_ANON_KEY),
+        hasJwtSecret: Boolean(env.SUPABASE_JWT_SECRET),
+      });
+    }
 
     if (request.method === 'OPTIONS') {
       return new Response(null, {
@@ -29,13 +33,13 @@ export default {
 
     try {
       if (url.pathname.startsWith('/api/trips')) {
-        console.log('[worker] route matched /api/trips');
+        if (!isProduction) console.debug('[api] route /api/trips');
         const auth = await requireAuth(request, env);
         return handleTrips(request, env, auth);
       }
 
       if (url.pathname.startsWith('/api/expenses')) {
-        console.log('[worker] route matched /api/expenses');
+        if (!isProduction) console.debug('[api] route /api/expenses');
         const auth = await requireAuth(request, env);
         return handleExpenses(request, env, auth);
       }

@@ -5,12 +5,16 @@ import { errorResponse, json, parseJson } from '../utils/http';
 export async function handleExpenses(request: Request, env: Env, auth: AuthContext): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname.replace('/api/expenses', '') || '/';
-  console.log('[expenses] incoming request', {
-    method: request.method,
-    path,
-    userId: auth.user.id,
-    hasToken: Boolean(auth.token),
-  });
+  const runtimeEnv = env as Record<string, string | undefined>;
+  const isProduction = runtimeEnv.NODE_ENV === 'production' || runtimeEnv.ENVIRONMENT === 'production';
+  if (!isProduction) {
+    console.debug('[api] expenses request', {
+      method: request.method,
+      path,
+      userId: auth.user.id,
+      hasToken: Boolean(auth.token),
+    });
+  }
 
   const supabase = createUserSupabase(env, auth.token);
 
@@ -36,7 +40,7 @@ export async function handleExpenses(request: Request, env: Env, auth: AuthConte
     return errorResponse('Not found', 404);
   } catch (err) {
     const error = err instanceof Error ? err : new Error('Internal server error');
-    console.error('Expenses route error:', {
+    console.error('[error] [worker] expenses route failed', {
       message: error.message,
       stack: error.stack,
       method: request.method,

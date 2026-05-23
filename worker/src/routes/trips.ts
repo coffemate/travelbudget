@@ -9,12 +9,16 @@ function isUuid(v: string): boolean {
 export async function handleTrips(request: Request, env: Env, auth: AuthContext): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname.replace('/api/trips', '') || '/';
-  console.log('[trips] incoming request', {
-    method: request.method,
-    path,
-    userId: auth.user.id,
-    hasToken: Boolean(auth.token),
-  });
+  const runtimeEnv = env as Record<string, string | undefined>;
+  const isProduction = runtimeEnv.NODE_ENV === 'production' || runtimeEnv.ENVIRONMENT === 'production';
+  if (!isProduction) {
+    console.debug('[api] trips request', {
+      method: request.method,
+      path,
+      userId: auth.user.id,
+      hasToken: Boolean(auth.token),
+    });
+  }
   const supabase = createUserSupabase(env, auth.token);
 
   try {
@@ -80,7 +84,7 @@ export async function handleTrips(request: Request, env: Env, auth: AuthContext)
     return errorResponse('Not found', 404);
   } catch (err) {
     const error = err instanceof Error ? err : new Error('Internal server error');
-    console.error('Trips route error:', {
+    console.error('[error] [worker] trips route failed', {
       message: error.message,
       stack: error.stack,
       method: request.method,

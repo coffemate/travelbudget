@@ -18,7 +18,6 @@ function unauthorizedResponse(message: string): Response {
 
 function getBearerToken(request: Request): string | null {
   const authHeader = request.headers.get('Authorization') || request.headers.get('authorization') || '';
-  console.log('[auth] authorization header present', { hasAuth: Boolean(authHeader) });
   if (!authHeader.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7).trim();
   console.log('[auth] bearer token parsed', { hasToken: Boolean(token), tokenLength: token.length });
@@ -44,12 +43,25 @@ async function verifyJwtLocally(token: string, env: Env): Promise<Record<string,
 }
 
 export async function requireAuth(request: Request, env: Env): Promise<AuthContext> {
-  console.log('[auth] env check', {
-    hasUrl: Boolean(env.SUPABASE_URL),
-    hasKey: Boolean(env.SUPABASE_ANON_KEY),
-  });
+  const runtimeEnv = env as Record<string, string | undefined>;
+  const isProduction = runtimeEnv.NODE_ENV === 'production' || runtimeEnv.ENVIRONMENT === 'production';
+
+  if (!isProduction) {
+    console.debug('[auth] env ready', {
+      hasUrl: Boolean(env.SUPABASE_URL),
+      hasKey: Boolean(env.SUPABASE_ANON_KEY),
+    });
+  }
+
   const token = getBearerToken(request);
-  if (!token) throw unauthorizedResponse('Unauthorized');
+  if (!token) {
+    console.warn('[warn] [auth] missing authorization header');
+    throw unauthorizedResponse('Unauthorized');
+  }
+
+  if (!isProduction) {
+    console.debug('[auth] bearer token detected', { hasToken: true, tokenLength: token.length });
+  }
 
   const localPayload = await verifyJwtLocally(token, env);
   if (localPayload?.sub) {
@@ -65,12 +77,15 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
   const supabase = createAnonSupabase(env);
   console.log('[auth] calling supabase.auth.getUser');
   const { data, error } = await supabase.auth.getUser(token);
-  console.log('[auth] getUser result', {
-    hasUser: Boolean(data?.user),
-    hasError: Boolean(error),
-    errorMessage: error?.message,
-  });
+  if (!isProduction) {
+    console.debug('[auth] getUser checked', {
+      hasUser: Boolean(data?.user),
+      hasError: Boolean(error),
+      errorMessage: error?.message,
+    });
+  }
   if (error || !data.user) {
+    console.warn('[warn] [auth] invalid or expired token');
     throw unauthorizedResponse('Invalid or expired token');
   }
 
