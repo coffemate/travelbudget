@@ -20,6 +20,7 @@ function getBearerToken(request: Request): string | null {
   const authHeader = request.headers.get('Authorization') || request.headers.get('authorization') || '';
   if (!authHeader.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7).trim();
+  console.log('[auth] bearer token parsed', { hasToken: Boolean(token), tokenLength: token.length });
   return token || null;
 }
 
@@ -74,6 +75,7 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
   }
 
   const supabase = createAnonSupabase(env);
+  console.log('[auth] calling supabase.auth.getUser');
   const { data, error } = await supabase.auth.getUser(token);
   if (!isProduction) {
     console.debug('[auth] getUser checked', {
