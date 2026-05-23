@@ -1,0 +1,20 @@
+{
+  "name": "travelbudget-worker-api",
+  "version": "2.0.0",
+  "description": "Travel budget backend API on Cloudflare Workers + Supabase Auth/RLS",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260510.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.18.0"
+  }
+}
