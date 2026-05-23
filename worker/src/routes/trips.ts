@@ -9,6 +9,12 @@ function isUuid(v: string): boolean {
 export async function handleTrips(request: Request, env: Env, auth: AuthContext): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname.replace('/api/trips', '') || '/';
+  console.log('[trips] incoming request', {
+    method: request.method,
+    path,
+    userId: auth.user.id,
+    hasToken: Boolean(auth.token),
+  });
   const supabase = createUserSupabase(env, auth.token);
 
   try {
@@ -73,6 +79,29 @@ export async function handleTrips(request: Request, env: Env, auth: AuthContext)
 
     return errorResponse('Not found', 404);
   } catch (err) {
-    return errorResponse(err instanceof Error ? err.message : 'Internal server error', 500);
+    const error = err instanceof Error ? err : new Error('Internal server error');
+    console.error('Trips route error:', {
+      message: error.message,
+      stack: error.stack,
+      method: request.method,
+      path,
+      userId: auth.user.id,
+    });
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        stack: error.stack,
+      }),
+      {
+        status: 500,
+        headers: {
+          'content-type': 'application/json; charset=utf-8',
+          'access-control-allow-origin': '*',
+          'access-control-allow-headers': 'content-type, authorization',
+          'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+        },
+      },
+    );
   }
 }
