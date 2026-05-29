@@ -6,10 +6,33 @@ function isUuid(v: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 }
 
+function isDateString(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function buildTripUpdatePayload(body: Record<string, unknown>): Record<string, unknown> | Response {
+  const payload: Record<string, unknown> = {};
+  if (typeof body.name === 'string') payload.name = body.name.trim();
+  if (isDateString(body.start_date)) payload.start_date = body.start_date;
+  if (isDateString(body.end_date)) payload.end_date = body.end_date;
+  if (typeof body.total_budget === 'number' && Number.isFinite(body.total_budget) && body.total_budget >= 0) {
+    payload.total_budget = body.total_budget;
+  }
+
+  if (!payload.name) return errorResponse('name is required', 400);
+  if (!payload.start_date) return errorResponse('start_date must be YYYY-MM-DD', 400);
+  if (!payload.end_date) return errorResponse('end_date must be YYYY-MM-DD', 400);
+  if (String(payload.start_date) > String(payload.end_date)) return errorResponse('start_date must be before or equal to end_date', 400);
+  if (payload.total_budget === undefined) return errorResponse('total_budget must be a non-negative number', 400);
+  return payload;
+}
+
 export async function handleTrips(request: Request, env: Env, auth: AuthContext): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname.replace('/api/trips', '') || '/';
-  const runtimeEnv = env as Record<string, string | undefined>;
+  const runtimeEnv = env as unknown as Record<string, string | undefined>;
   const isProduction = runtimeEnv.NODE_ENV === 'production' || runtimeEnv.ENVIRONMENT === 'production';
   if (!isProduction) {
     console.debug('[api] trips request', {
@@ -50,7 +73,9 @@ export async function handleTrips(request: Request, env: Env, auth: AuthContext)
 
     if (request.method === 'PUT' && path === `/${tripId}`) {
       const body = await parseJson<Record<string, unknown>>(request);
-      const { data, error } = await supabase.from('trips').update(body).eq('id', tripId).select('*').maybeSingle();
+      const payload = buildTripUpdatePayload(body);
+      if (payload instanceof Response) return payload;
+      const { data, error } = await supabase.from('trips').update(payload).eq('id', tripId).select('*').maybeSingle();
       if (error) return errorResponse(error.message, 400);
       if (!data) return errorResponse('Trip not found', 404);
       return json(data);

@@ -57,17 +57,19 @@
 - 响应：`Trip`
 
 ### PUT `/trips/:tripId`
-- 说明：更新行程（当前支持名称与总预算）
+- 说明：更新行程（名称、行程时间与总预算）
 - 请求体：
 
 ```json
 {
   "name": "Tokyo Trip Updated",
+  "start_date": "2026-04-02",
+  "end_date": "2026-04-12",
   "total_budget": 120000
 }
 ```
 
-- 必填字段：`name`, `total_budget`
+- 必填字段：`name`, `start_date`, `end_date`, `total_budget`
 - 响应：`Trip`
 
 ### DELETE `/trips/:tripId`

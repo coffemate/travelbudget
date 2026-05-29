@@ -43,7 +43,7 @@ async function verifyJwtLocally(token: string, env: Env): Promise<Record<string,
 }
 
 export async function requireAuth(request: Request, env: Env): Promise<AuthContext> {
-  const runtimeEnv = env as Record<string, string | undefined>;
+  const runtimeEnv = env as unknown as Record<string, string | undefined>;
   const isProduction = runtimeEnv.NODE_ENV === 'production' || runtimeEnv.ENVIRONMENT === 'production';
 
   if (!isProduction) {

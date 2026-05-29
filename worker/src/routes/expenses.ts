@@ -5,7 +5,7 @@ import { errorResponse, json, parseJson } from '../utils/http';
 export async function handleExpenses(request: Request, env: Env, auth: AuthContext): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname.replace('/api/expenses', '') || '/';
-  const runtimeEnv = env as Record<string, string | undefined>;
+  const runtimeEnv = env as unknown as Record<string, string | undefined>;
   const isProduction = runtimeEnv.NODE_ENV === 'production' || runtimeEnv.ENVIRONMENT === 'production';
   if (!isProduction) {
     console.debug('[api] expenses request', {

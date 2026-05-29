@@ -14,6 +14,8 @@
       <div class="progress-track"><div class="progress-fill" :class="{ 'progress-fill--danger': remain < 0 }" :style="{ width: `${progress}%` }"></div></div>
     </div>
 
+    <ExpenseAnalysisPanel v-if="trip" :analysis="expenseAnalysis" />
+
     <div v-if="trip" class="card">
       <h3 class="section-title">消费时间线</h3>
       <p v-if="expenses.length === 0" class="body-text">暂无支出记录</p>
@@ -25,7 +27,7 @@
           </div>
           <div class="timeline-card" @click="goEdit(item.id)">
             <div class="row" style="justify-content: space-between; align-items: center;">
-              <span class="category-chip">{{ categoryLabel(item.category) }}</span>
+              <span class="category-chip" :style="categoryChipStyle(item.category)">{{ categoryLabel(item.category) }}</span>
               <span class="amount-strong">{{ item.amount }} {{ item.currency }}</span>
             </div>
             <div class="expense-meta">{{ item.note?.trim() ? item.note : '无备注' }}</div>
@@ -44,8 +46,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
+import ExpenseAnalysisPanel from '../components/ExpenseAnalysisPanel.vue';
 import { useAuthStore } from '../stores/auth';
 import { useBudgetStore } from '../stores/budget';
+import { buildExpenseAnalysis, getCategoryConfig } from '../utils/expenseAnalysis';
 
 const route = useRoute(); const router = useRouter(); const authStore = useAuthStore(); const store = useBudgetStore();
 const trip = ref(null); const expenses = ref([]); const tripId = route.params.tripId;
@@ -57,6 +61,7 @@ const progress = computed(() => {
   if (total <= 0) return 0;
   return Math.min(100, Number(((spent.value / total) * 100).toFixed(2)));
 });
+const expenseAnalysis = computed(() => buildExpenseAnalysis(expenses.value));
 const tripDays = computed(() => {
   if (!trip.value) return 0;
   const s = new Date(trip.value.start_date); const e = new Date(trip.value.end_date);
@@ -92,7 +97,14 @@ function formatTripRange(startDate, endDate) {
 const money = (v) => Number(v || 0).toFixed(2);
 const formatDay = (v) => new Date(v).toLocaleDateString('zh-CN');
 const formatClock = (v) => new Date(v).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-const categoryLabel = (c) => ({ food: '餐饮', transport: '交通', hotel: '住宿', ticket: '门票', shopping: '购物', general: '其他' }[c] || '未分类');
+const categoryLabel = (category) => getCategoryConfig(category).label;
+function categoryChipStyle(category) {
+  const config = getCategoryConfig(category);
+  return {
+    backgroundColor: `${config.color}18`,
+    color: config.color,
+  };
+}
 </script>
 
 <style scoped>
@@ -100,7 +112,7 @@ const categoryLabel = (c) => ({ food: '餐饮', transport: '交通', hotel: '住
 .timeline-item { display:grid; grid-template-columns: 84px 1fr; gap:10px; align-items: stretch; }
 .timeline-time { font-size: 12px; color: var(--muted); padding-top: 8px; }
 .timeline-card { border:1px solid var(--border); border-radius:14px; padding:12px; background:#fff; cursor:pointer; }
-.category-chip { display:inline-block; padding:4px 8px; border-radius:999px; background:#ecfeff; color:#0f766e; font-size:12px; }
+.category-chip { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; }
 .amount-strong { font-weight:800; font-size:18px; }
 .fab-create { position: fixed; right: 20px; bottom: 20px; width:52px; height:52px; border-radius:999px; background: var(--primary); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:30px; box-shadow: var(--shadow); }
 .progress-fill--danger { background: linear-gradient(90deg, #f87171, #dc2626); }

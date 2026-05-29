@@ -30,7 +30,7 @@
 import { computed, reactive, watch } from 'vue';
 const props = defineProps({ submitSuccessVersion: Number, successMessage: String, initialData: Object, title: String, submitText: String, showDelete: Boolean, showPayMethod: { type: Boolean, default: true } });
 const emit = defineEmits(['submit', 'delete']);
-const categories=[{value:'food',label:'餐饮'},{value:'transport',label:'交通'},{value:'hotel',label:'住宿'},{value:'ticket',label:'门票'},{value:'shopping',label:'购物'},{value:'general',label:'其他'}];
+const categories=[{value:'food',label:'餐饮'},{value:'transport',label:'交通'},{value:'hotel',label:'住宿'},{value:'ticket',label:'娱乐'},{value:'shopping',label:'购物'},{value:'general',label:'其他'}];
 const payMethods=[{value:'mobile',label:'手机'},{value:'cash',label:'现金'},{value:'card',label:'刷卡'}];
 const initialForm=()=>({amount:0,currency:'CNY',fx_rate_to_base:1,category:'food',pay_method:'mobile',spent_at:'',note:''});
 const form=reactive(initialForm());
