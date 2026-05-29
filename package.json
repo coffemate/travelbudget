@@ -1,6 +1,7 @@
 {
   "name": "travel-budget",
   "private": true,
+  "packageManager": "pnpm@11.3.0",
   "scripts": {
     "dev:frontend": "pnpm --filter travelbudget-frontend dev",
     "dev:worker": "pnpm --filter travelbudget-worker-api dev"
