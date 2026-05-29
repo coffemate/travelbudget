@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+**/dist/
+
+# Environment and local secrets
+.env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.development
+frontend/.env.local
+frontend/.env.*.local
+worker/.dev.vars
+worker/.dev.vars.*
+
+# Cloudflare / Wrangler local state
+.wrangler/
+**/.wrangler/
+
+# Vite / test / coverage caches
+.vite/
+**/.vite/
+coverage/
+**/coverage/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

@@ -6,7 +6,7 @@ import { errorResponse, json } from './utils/http';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const runtimeEnv = env as Record<string, string | undefined>;
+    const runtimeEnv = env as unknown as Record<string, string | undefined>;
     const isProduction = runtimeEnv.NODE_ENV === 'production' || runtimeEnv.ENVIRONMENT === 'production';
     if (!isProduction) {
       console.debug('[worker] request', { method: request.method, path: new URL(request.url).pathname });

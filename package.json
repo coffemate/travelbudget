@@ -1,12 +1,8 @@
 {
   "name": "travel-budget",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "worker"
-  ],
   "scripts": {
-    "dev:frontend": "npm run dev --workspace frontend",
-    "dev:worker": "npm run dev --workspace worker"
+    "dev:frontend": "pnpm --filter travelbudget-frontend dev",
+    "dev:worker": "pnpm --filter travelbudget-worker-api dev"
   }
 }

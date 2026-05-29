@@ -1,0 +1,8 @@
+packages:
+  - frontend
+  - worker
+allowBuilds:
+  esbuild: true
+  sharp: true
+  vue-demi: true
+  workerd: true
