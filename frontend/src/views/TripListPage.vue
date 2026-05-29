@@ -24,7 +24,19 @@
           <div class="summary-item"><div class="summary-label">已支出</div><div class="summary-value summary-value--spent">{{ formatMoney(getSpent(trip)) }}</div></div>
           <div class="summary-item"><div class="summary-label">剩余预算</div><div class="summary-value" :class="{ 'text-danger': Number(trip.remaining_budget) < 0 }">{{ formatMoney(trip.remaining_budget) }}</div></div>
         </div>
-        <n-progress style="margin-top:12px" type="line" :percentage="getProgressPercent(trip)" :status="isOverBudget(trip) ? 'error' : 'success'" :show-indicator="false" />
+
+        <div v-if="categorySegmentsByTrip[trip.id]?.length" class="category-bar" @click.stop>
+          <n-tooltip v-for="segment in categorySegmentsByTrip[trip.id]" :key="`${trip.id}-${segment.key}`" trigger="hover">
+            <template #trigger>
+              <div class="category-segment" :style="{ width: `${segment.percent}%`, backgroundColor: segment.color }"></div>
+            </template>
+            <div>{{ segment.label }}</div>
+            <div>￥{{ formatMoney(segment.amount) }}</div>
+            <div>{{ segment.percent.toFixed(2) }}%</div>
+          </n-tooltip>
+        </div>
+        <p v-else class="helper-text" style="margin-top:12px;">暂无支出数据</p>
+
         <n-space class="action-row" @click.stop>
           <n-button size="small" @click="openTrip(trip.id)">查看支出</n-button>
           <n-button size="small" type="primary" secondary @click="handleQuickAddExpense(trip.id)">记一笔</n-button>
@@ -59,26 +71,79 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useMessage } from 'naive-ui';
 import { RouterLink, useRouter } from 'vue-router';
+import { listExpenses } from '../api/trips';
 import { useAuthStore } from '../stores/auth';
 import { useBudgetStore } from '../stores/budget';
 const message = useMessage();
 const authStore = useAuthStore(); const store = useBudgetStore(); const router = useRouter();
 const searchText = ref(''); const editModalVisible = ref(false); const deleteModalVisible = ref(false); const saving = ref(false);
 const currentTripId = ref(''); const deleteConfirm = ref('');
+const expensesByTrip = ref({});
+const categoryConfig = [
+  { key: 'food', label: '餐饮', color: '#FF9800' },
+  { key: 'hotel', label: '住宿', color: '#2196F3' },
+  { key: 'transport', label: '交通', color: '#4CAF50' },
+  { key: 'shopping', label: '购物', color: '#E91E63' },
+  { key: 'ticket', label: '娱乐', color: '#9C27B0' },
+  { key: 'general', label: '其它', color: '#9E9E9E' },
+];
 const editForm = reactive({ name: '', total_budget: 0 });
 const filteredTrips = computed(() => !searchText.value ? store.trips : store.trips.filter((trip) => trip.name?.toLowerCase().includes(searchText.value.toLowerCase())));
 const emptyMessage = computed(() => (store.trips.length === 0 ? '暂无行程，请先创建。' : '没有匹配的行程。'));
-onMounted(async () => { store.loadTripsFromStorage(authStore.user?.id); try { await store.syncTripsAction(authStore.user?.id); } catch {} });
+const categorySegmentsByTrip = computed(() => {
+  const output = {};
+  store.trips.forEach((trip) => {
+    const expenses = expensesByTrip.value[trip.id] || [];
+    const totals = categoryConfig.reduce((acc, item) => ({ ...acc, [item.key]: 0 }), {});
+    expenses.forEach((expense) => {
+      const key = categoryConfig.some((item) => item.key === expense.category) ? expense.category : 'general';
+      totals[key] += Number(expense.amount || 0);
+    });
+    const totalAmount = Object.values(totals).reduce((acc, num) => acc + num, 0);
+    if (totalAmount <= 0) {
+      output[trip.id] = [];
+      return;
+    }
+    output[trip.id] = categoryConfig
+      .map((item) => ({ ...item, amount: totals[item.key], percent: (totals[item.key] / totalAmount) * 100 }))
+      .filter((item) => item.amount > 0);
+  });
+  return output;
+});
+
+onMounted(async () => {
+  store.loadTripsFromStorage(authStore.user?.id);
+  try {
+    await store.syncTripsAction(authStore.user?.id);
+    await loadTripExpenses();
+  } catch {}
+});
+
+async function loadTripExpenses() {
+  const pairs = await Promise.all(store.trips.map(async (trip) => {
+    try {
+      const expenses = await listExpenses(trip.id);
+      return [trip.id, Array.isArray(expenses) ? expenses : []];
+    } catch {
+      return [trip.id, []];
+    }
+  }));
+  expensesByTrip.value = Object.fromEntries(pairs);
+}
 const getTripDays = (trip) => Math.max(0, Math.floor((new Date(trip.end_date).setHours(0,0,0,0)-new Date(trip.start_date).setHours(0,0,0,0))/(1000*60*60*24))+1);
 function getTripStatus(trip){const t=new Date();t.setHours(0,0,0,0);const s=new Date(trip.start_date);const e=new Date(trip.end_date);s.setHours(0,0,0,0);e.setHours(0,0,0,0);if(t<s)return 'upcoming';if(t>e)return 'finished';return 'ongoing';}
 const getTripStatusText=(trip)=>({upcoming:'即将开始',ongoing:'进行中',finished:'已结束'}[getTripStatus(trip)]);
-const getSpent=(trip)=>Number(trip.total_budget||0)-Number(trip.remaining_budget||0); const isOverBudget=(trip)=>Number(trip.remaining_budget)<0;
-const getProgressPercent=(trip)=>{const total=Number(trip.total_budget||0);if(total<=0)return 0;return Math.min(100,Number((((getSpent(trip)/total)*100)).toFixed(2)));};
+const getSpent=(trip)=>Number(trip.total_budget||0)-Number(trip.remaining_budget||0);
 const formatMoney=(a)=>Number(a||0).toFixed(2);
 const openTrip=async(id)=>router.push(`/trip/${id}`); const handleQuickAddExpense=async(id)=>router.push(`/trip/${id}/add`);
 function startEdit(trip){currentTripId.value=trip.id;editForm.name=trip.name;editForm.total_budget=Number(trip.total_budget);editModalVisible.value=true;}
 async function handleConfirmEdit(){saving.value=true; try{await store.updateTripAction(currentTripId.value,{name:editForm.name,total_budget:editForm.total_budget},authStore.user?.id);message.success('保存成功');editModalVisible.value=false;}catch{message.error('操作失败');} finally{saving.value=false;}}
 function openDeleteDialog(id){currentTripId.value=id;deleteConfirm.value='';deleteModalVisible.value=true;}
-async function handleDeleteTrip(){saving.value=true;try{await store.deleteTripAction(currentTripId.value,authStore.user?.id);message.success('删除成功');deleteModalVisible.value=false;}catch{message.error('操作失败');}finally{saving.value=false;}}
+async function handleDeleteTrip(){saving.value=true;try{await store.deleteTripAction(currentTripId.value,authStore.user?.id);message.success('删除成功');deleteModalVisible.value=false;await loadTripExpenses();}catch{message.error('操作失败');}finally{saving.value=false;}}
 function formatTripRange(startDate,endDate){if(!startDate||!endDate)return '日期待定';const s=new Date(startDate),e=new Date(endDate),sy=s.getFullYear(),ey=e.getFullYear(),sm=s.getMonth()+1,em=e.getMonth()+1,sd=s.getDate(),ed=e.getDate();if(sy===ey)return `${sy}年${sm}月${sd}日 - ${em}月${ed}日`;return `${sy}年${sm}月${sd}日 - ${ey}年${em}月${ed}日`;}
 </script>
+
+<style scoped>
+.category-bar { margin-top:12px; height:12px; border-radius:999px; background:#f3f4f6; display:flex; overflow:hidden; }
+.category-segment { height:100%; min-width:6px; }
+</style>

@@ -5,7 +5,7 @@
       <n-form-item label="消费分类">
         <n-select v-model:value="form.category" :options="categories" />
       </n-form-item>
-      <n-form-item label="支付方式">
+      <n-form-item v-if="showPayMethod" label="支付方式">
         <n-segmented v-model:value="form.pay_method" :options="payMethods" />
       </n-form-item>
       <div class="row">
@@ -28,7 +28,7 @@
 
 <script setup>
 import { computed, reactive, watch } from 'vue';
-const props = defineProps({ submitSuccessVersion: Number, successMessage: String, initialData: Object, title: String, submitText: String, showDelete: Boolean });
+const props = defineProps({ submitSuccessVersion: Number, successMessage: String, initialData: Object, title: String, submitText: String, showDelete: Boolean, showPayMethod: { type: Boolean, default: true } });
 const emit = defineEmits(['submit', 'delete']);
 const categories=[{value:'food',label:'餐饮'},{value:'transport',label:'交通'},{value:'hotel',label:'住宿'},{value:'ticket',label:'门票'},{value:'shopping',label:'购物'},{value:'general',label:'其他'}];
 const payMethods=[{value:'mobile',label:'手机'},{value:'cash',label:'现金'},{value:'card',label:'刷卡'}];

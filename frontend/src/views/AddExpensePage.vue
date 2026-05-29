@@ -19,6 +19,7 @@
       :title="isEditMode ? '编辑支出记录' : '新增支出'"
       :submit-text="isEditMode ? '保存修改' : '保存并返回'"
       :show-delete="isEditMode"
+      :show-pay-method="!isEditMode"
       @submit="handleSubmit"
       @delete="handleDelete"
     />
