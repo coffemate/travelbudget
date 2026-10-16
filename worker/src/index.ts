@@ -52,12 +52,11 @@ export default {
         message: error.message,
         stack: error.stack,
       });
+      const responseBody = isProduction
+        ? { success: false, error: 'Internal server error' }
+        : { success: false, error: error.message, stack: error.stack };
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: error.message,
-          stack: error.stack,
-        }),
+        JSON.stringify(responseBody),
         {
           status: 500,
           headers: {

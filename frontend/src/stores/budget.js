@@ -127,7 +127,7 @@ export const useBudgetStore = defineStore('budget', () => {
     error.value = '';
     try {
       const result = await addExpense(tripId, payload);
-      upsertTrip(result.trip, userId);
+      if (result.trip) upsertTrip(result.trip, userId);
       return result;
     } catch (err) {
       error.value = err.message;
@@ -142,7 +142,7 @@ export const useBudgetStore = defineStore('budget', () => {
     error.value = '';
     try {
       const result = await updateExpense(expenseId, payload);
-      upsertTrip(result.trip, userId);
+      if (result.trip) upsertTrip(result.trip, userId);
       return result;
     } catch (err) {
       error.value = err.message;
@@ -157,7 +157,7 @@ export const useBudgetStore = defineStore('budget', () => {
     error.value = '';
     try {
       const result = await deleteExpense(expenseId);
-      upsertTrip(result.trip, userId);
+      if (result.trip) upsertTrip(result.trip, userId);
       return result;
     } catch (err) {
       error.value = err.message;

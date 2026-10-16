@@ -69,6 +69,7 @@
 }
 ```
 
+
 - 必填字段：`name`, `start_date`, `end_date`, `total_budget`
 - 响应：`Trip`
 
@@ -82,8 +83,11 @@
 }
 ```
 
+
 ### POST `/trips/:tripId/expenses`
 - 说明：新增支出
+
+写入成功后，API 会根据该行程当前全部 `expenses` 明细重算并返回最新 `trip.remaining_budget`。
 - 请求体：
 
 ```json
@@ -120,6 +124,8 @@
 
 ### PATCH `/expenses/:expenseId`
 - 说明：更新支出
+
+编辑成功后，API 会按更新后的全部 `expenses` 明细重算并返回最新 `trip`。
 - 请求体：
 
 ```json
@@ -146,6 +152,8 @@
 
 ### DELETE `/expenses/:expenseId`
 - 说明：删除（软删除）支出，并返还预算
+
+删除成功后，API 会按剩余的全部 `expenses` 明细重算并返回最新 `trip`。前端展示“总支出/已支出”必须汇总 expense 明细，不得使用 `total_budget - remaining_budget` 反推。
 - 响应：
 
 ```json
