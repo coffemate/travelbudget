@@ -38,8 +38,8 @@
           </div>
           <div class="summary-item">
             <div class="summary-label">剩余预算</div>
-            <div class="summary-value" :class="{ 'text-danger': Number(trip.remaining_budget) < 0 }">
-              {{ formatMoneyValue(trip.remaining_budget) }}
+            <div class="summary-value" :class="{ 'text-danger': getRemainingBudget(trip) < 0 }">
+              {{ formatMoneyValue(getRemainingBudget(trip)) }}
             </div>
           </div>
         </div>
@@ -175,7 +175,8 @@ function getTripStatus(trip) {
 }
 
 const getTripStatusText = (trip) => ({ upcoming: '即将开始', ongoing: '进行中', finished: '已结束' }[getTripStatus(trip)]);
-const getSpent = (trip) => Number(trip.total_budget || 0) - Number(trip.remaining_budget || 0);
+const getSpent = (trip) => expenseAnalysisByTrip.value[trip.id]?.totalExpense || 0;
+const getRemainingBudget = (trip) => Number(trip.total_budget || 0) - getSpent(trip);
 const formatMoneyValue = (value) => Number(value || 0).toFixed(2);
 const openTrip = async (id) => router.push(`/trip/${id}`);
 const handleQuickAddExpense = async (id) => router.push(`/trip/${id}/add`);

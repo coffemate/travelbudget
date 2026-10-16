@@ -248,6 +248,42 @@ npx wrangler dev
 
 默认端口：`8787`
 
+### 8.4 本地无法连接 Supabase 时使用远程 Worker
+
+如果当前网络无法从本机访问 Supabase，可以使用 Wrangler 的远程开发模式：Worker 运行在 Cloudflare 上，Wrangler 在本机提供开发代理地址；前端仍在本机运行。该模式不会执行生产部署。
+
+1. 确认已登录 Cloudflare（首次使用时执行）：
+
+   ```bash
+   pnpm exec wrangler login
+   ```
+
+2. 在项目根目录启动远程 Worker：
+
+   ```bash
+   pnpm exec wrangler dev --remote
+   ```
+
+   首次运行时按 Wrangler 提示授权并选择 Cloudflare 账号。远程开发环境变量从 Worker 项目的 `.dev.vars` 读取；确认该文件包含 `SUPABASE_URL`、`SUPABASE_ANON_KEY` 和 `SUPABASE_JWT_SECRET`。`.dev.vars` 已加入 Git 忽略，不要提交密钥。
+
+   > `--remote` 表示 Worker 代码在 Cloudflare 远程执行，但这仍是 Wrangler 开发会话，不等同于 `wrangler deploy`。停止命令即可结束远程开发会话。
+
+3. 将 Wrangler 输出的本地代理地址（通常为 `http://localhost:8787`）写入 `frontend/.env.development`：
+
+   ```env
+   VITE_API_URL=http://localhost:8787
+   ```
+
+   保留前端现有的 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY`，它们用于浏览器端 Supabase Auth。远程 Worker 的 Supabase 访问使用 `worker/.dev.vars` 中配置的值。
+
+4. 在另一个终端启动前端；如果前端已运行，修改环境变量后重启以使配置生效：
+
+   ```bash
+   pnpm dev:frontend
+   ```
+
+前端仍请求 `http://localhost:8787/api/...`，由 Wrangler 转发到 Cloudflare 上运行的 Worker。远程模式下，Supabase API 请求从 Cloudflare 发出，因此可避开本机到 Supabase 的网络连通问题。
+
 ---
 
 ## 9. 启动前端

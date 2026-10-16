@@ -68,8 +68,10 @@
 
 ### 3.1 关键概念
 - **总预算 total_budget**：出发前设定。
-- **剩余预算 remaining_budget**：实时可花费额度。
+- **剩余预算 remaining_budget**：`total_budget - total_expense` 的持久化预算快照。
 - **消费 expense**：用户每笔支出。
+
+页面上的总支出唯一来源是行程的 `expenses` 明细汇总：优先使用 `amount_in_base`，缺少时使用 `amount * fx_rate_to_base`。`remaining_budget` 只表示预算扣除后的剩余额度，不能反向推导页面的“总支出/已支出”。expense 新增、编辑、删除后，API 会按最新明细重算该字段。
 - **预算流水 budget_ledger**：每次扣减/回滚的审计记录（不可删改）。
 
 ### 3.2 扣减主流程（新增消费）

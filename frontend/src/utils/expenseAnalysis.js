@@ -19,8 +19,11 @@ export function getCategoryConfig(category) {
 
 export function getExpenseAmount(expense) {
   if (!expense) return 0;
+  const hasBaseAmount = expense.amount_in_base !== null
+    && expense.amount_in_base !== undefined
+    && expense.amount_in_base !== '';
   const baseAmount = Number(expense.amount_in_base);
-  if (Number.isFinite(baseAmount)) return baseAmount;
+  if (hasBaseAmount && Number.isFinite(baseAmount)) return baseAmount;
 
   const amount = Number(expense.amount || 0);
   const rate = Number(expense.fx_rate_to_base || 1);

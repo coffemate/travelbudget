@@ -54,14 +54,14 @@ import { buildExpenseAnalysis, getCategoryConfig } from '../utils/expenseAnalysi
 const route = useRoute(); const router = useRouter(); const authStore = useAuthStore(); const store = useBudgetStore();
 const trip = ref(null); const expenses = ref([]); const tripId = route.params.tripId;
 
-const spent = computed(() => Number(trip.value?.total_budget || 0) - Number(trip.value?.remaining_budget || 0));
-const remain = computed(() => Number(trip.value?.remaining_budget || 0));
+const expenseAnalysis = computed(() => buildExpenseAnalysis(expenses.value));
+const spent = computed(() => expenseAnalysis.value.totalExpense);
+const remain = computed(() => Number(trip.value?.total_budget || 0) - spent.value);
 const progress = computed(() => {
   const total = Number(trip.value?.total_budget || 0);
   if (total <= 0) return 0;
   return Math.min(100, Number(((spent.value / total) * 100).toFixed(2)));
 });
-const expenseAnalysis = computed(() => buildExpenseAnalysis(expenses.value));
 const tripDays = computed(() => {
   if (!trip.value) return 0;
   const s = new Date(trip.value.start_date); const e = new Date(trip.value.end_date);

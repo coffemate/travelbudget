@@ -29,6 +29,36 @@ function buildTripUpdatePayload(body: Record<string, unknown>): Record<string, u
   return payload;
 }
 
+async function syncTripRemainingBudget(supabase: ReturnType<typeof createUserSupabase>, tripId: string) {
+  const [{ data: trip, error: tripError }, { data: expenses, error: expensesError }] = await Promise.all([
+    supabase.from('trips').select('*').eq('id', tripId).maybeSingle(),
+    supabase.from('expenses').select('amount, amount_in_base, fx_rate_to_base').eq('trip_id', tripId),
+  ]);
+  if (tripError) throw tripError;
+  if (expensesError) throw expensesError;
+  if (!trip) return null;
+
+  const totalExpense = (expenses ?? []).reduce((sum, expense) => {
+    const hasBaseAmount = expense.amount_in_base !== null
+      && expense.amount_in_base !== undefined
+      && expense.amount_in_base !== '';
+    const baseAmount = Number(expense.amount_in_base);
+    if (hasBaseAmount && Number.isFinite(baseAmount)) return sum + baseAmount;
+    const amount = Number(expense.amount || 0);
+    const rate = Number(expense.fx_rate_to_base || 1);
+    return Number.isFinite(amount * rate) ? sum + amount * rate : sum;
+  }, 0);
+  const remainingBudget = Number(trip.total_budget || 0) - totalExpense;
+  const { data: updatedTrip, error: updateError } = await supabase
+    .from('trips')
+    .update({ remaining_budget: remainingBudget })
+    .eq('id', tripId)
+    .select('*')
+    .single();
+  if (updateError) throw updateError;
+  return updatedTrip;
+}
+
 export async function handleTrips(request: Request, env: Env, auth: AuthContext): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname.replace('/api/trips', '') || '/';
@@ -78,7 +108,7 @@ export async function handleTrips(request: Request, env: Env, auth: AuthContext)
       const { data, error } = await supabase.from('trips').update(payload).eq('id', tripId).select('*').maybeSingle();
       if (error) return errorResponse(error.message, 400);
       if (!data) return errorResponse('Trip not found', 404);
-      return json(data);
+      return json(await syncTripRemainingBudget(supabase, tripId));
     }
 
     if (request.method === 'DELETE' && path === `/${tripId}`) {
@@ -97,7 +127,8 @@ export async function handleTrips(request: Request, env: Env, auth: AuthContext)
       };
       const { data, error } = await supabase.from('expenses').insert(payload).select('*').single();
       if (error) return errorResponse(error.message, 400);
-      return json(data, 201);
+      const trip = await syncTripRemainingBudget(supabase, tripId);
+      return json({ expense: data, trip }, 201);
     }
 
     if (request.method === 'GET' && path === `/${tripId}/expenses`) {
@@ -116,12 +147,11 @@ export async function handleTrips(request: Request, env: Env, auth: AuthContext)
       path,
       userId: auth.user.id,
     });
+    const responseBody = isProduction
+      ? { success: false, error: 'Internal server error' }
+      : { success: false, error: error.message, stack: error.stack };
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-        stack: error.stack,
-      }),
+      JSON.stringify(responseBody),
       {
         status: 500,
         headers: {
